@@ -16,6 +16,11 @@ import cryptoToken from '../../../util/cryptoToken';
 import generateOTP from '../../../util/generateOTP';
 import { User } from '../user/user.model';
 import { USER_AUTH_PROVIDER } from '../user/user.constant';
+import { token } from 'morgan';
+import {
+  getAppleUserInfoWithToken,
+  getUserInfoWithToken,
+} from '../user/user.util';
 
 //login
 const loginUserFromDB = async (payload: ILoginData) => {
@@ -25,28 +30,32 @@ const loginUserFromDB = async (payload: ILoginData) => {
 
   //GOOGLE LOGIN
   if (payload.auth_provider === USER_AUTH_PROVIDER.GOOGLE && google_id_token) {
-    userInfo = await User.findOne({ email }).select('+password');
-
-    if (userInfo && await User.isMatchPassword(password, userInfo.password)) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, 'Password is incorrect!');
-    }
-
+    const tokenData = await getUserInfoWithToken(google_id_token);
+    const userEmail = tokenData?.data?.email;
+    userInfo = await User.findOne({ email: userEmail }).select('+password');
   }
   //APPLE LOGIN
-
-  else if (payload.auth_provider === USER_AUTH_PROVIDER.APPLE && apple_id_token) {
-
-  } else {
-    // LOCAL LOGIN
+  else if (
+    payload.auth_provider === USER_AUTH_PROVIDER.APPLE &&
+    apple_id_token
+  ) {
+    const tokenData = await getAppleUserInfoWithToken(apple_id_token);
+    const userEmail = tokenData.data.email;
+    userInfo = await User.findOne({ email: userEmail }).select('+password');
+  }
+  // LOCAL LOGIN
+  else {
     if (payload.auth_provider === USER_AUTH_PROVIDER.LOCAL && password) {
       userInfo = await User.findOne({ email }).select('+password');
 
-      console.log(userInfo)
+      console.log(userInfo);
 
-      if (userInfo && !(await User.isMatchPassword(password, userInfo.password))) {
+      if (
+        userInfo &&
+        !(await User.isMatchPassword(password, userInfo.password))
+      ) {
         throw new ApiError(StatusCodes.BAD_REQUEST, 'Password is incorrect!');
       }
-
     }
   }
 
@@ -70,8 +79,6 @@ const loginUserFromDB = async (payload: ILoginData) => {
     );
   }
 
-
-
   //create token
   const createToken = jwtHelper.createToken(
     { id: userInfo._id, role: userInfo.role, email: userInfo.email },
@@ -90,20 +97,18 @@ const forgetPasswordToDB = async (email: string) => {
   }
 
   //send mail
-  const otp = generateOTP();
+  const generateId = crypto.randomUUID();
   const value = {
-    otp,
+    resetLink: `${config.front_end_app_url}/reset-password?token=${generateId}`,
     email: isExistUser.email,
   };
   const forgetPassword = emailTemplate.resetPassword(value);
   emailHelper.sendEmail(forgetPassword);
 
   //save to DB
-  const authentication = {
-    oneTimeCode: otp,
-    expireAt: new Date(Date.now() + 3 * 60000),
-  };
-  await User.findOneAndUpdate({ email }, { $set: { authentication } });
+  await User.findByIdAndUpdate(isExistUser._id, {
+    $set: { token: generateId },
+  });
 };
 
 //verify email
@@ -111,14 +116,16 @@ const verifyEmailToDB = async (verify_token: string) => {
   const isExistUser = await User.findOne({ token: verify_token });
 
   if (!isExistUser) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, "Token is not valid!");
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Token is not valid!');
   }
 
-  await User.findOneAndUpdate({ token: verify_token }, {
-    token: null,
-    verified: true
-  })
-
+  await User.findOneAndUpdate(
+    { token: verify_token },
+    {
+      token: null,
+      verified: true,
+    }
+  );
 
   //create token
   const createToken = jwtHelper.createToken(
@@ -127,40 +134,19 @@ const verifyEmailToDB = async (verify_token: string) => {
     config.jwt.jwt_expire_in as string
   );
 
-
-  return { data: { accessToken: createToken }, message: "Account successfullay verified." };
+  return {
+    data: { accessToken: createToken },
+    message: 'Account successfullay verified.',
+  };
 };
 
 //forget password
-const resetPasswordToDB = async (
-  token: string,
-  payload: IAuthResetPassword
-) => {
-  const { newPassword, confirmPassword } = payload;
+const resetPasswordToDB = async (payload: IAuthResetPassword) => {
+  const { newPassword, confirmPassword, token } = payload;
   //isExist token
-  const isExistToken = await ResetToken.isExistToken(token);
+  const isExistToken = await User.findOne({ token });
   if (!isExistToken) {
-    throw new ApiError(StatusCodes.UNAUTHORIZED, 'You are not authorized');
-  }
-
-  //user permission check
-  const isExistUser = await User.findById(isExistToken.user).select(
-    '+authentication'
-  );
-  if (!isExistUser?.authentication?.isResetPassword) {
-    throw new ApiError(
-      StatusCodes.UNAUTHORIZED,
-      "You don't have permission to change the password. Please click again to 'Forgot Password'"
-    );
-  }
-
-  //validity check
-  const isValid = await ResetToken.isExpireToken(token);
-  if (!isValid) {
-    throw new ApiError(
-      StatusCodes.BAD_REQUEST,
-      'Token expired, Please click again to the forget password'
-    );
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Token is not valid!');
   }
 
   //check password
@@ -178,12 +164,10 @@ const resetPasswordToDB = async (
 
   const updateData = {
     password: hashPassword,
-    authentication: {
-      isResetPassword: false,
-    },
+    token: null,
   };
 
-  await User.findOneAndUpdate({ _id: isExistToken.user }, updateData, {
+  await User.findOneAndUpdate({ _id: isExistToken._id }, updateData, {
     new: true,
   });
 };
@@ -203,7 +187,10 @@ const changePasswordToDB = async (
     currentPassword &&
     !(await User.isMatchPassword(currentPassword, isExistUser.password))
   ) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'Password is incorrect');
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      'Current password is incorrect'
+    );
   }
 
   //newPassword and current password
@@ -229,6 +216,7 @@ const changePasswordToDB = async (
 
   const updateData = {
     password: hashPassword,
+    token: null,
   };
   await User.findOneAndUpdate({ _id: user.id }, updateData, { new: true });
 };
@@ -239,10 +227,16 @@ const resendEmailToDB = async (email: string) => {
     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
   }
   if (isExistUser.verified) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, "User is already verified! Please login to your account.");
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      'User is already verified! Please login to your account.'
+    );
   }
 
-  const createAccountTemplate = emailTemplate.createAccount({ email: isExistUser.email, verify_url: `${config.front_end_app_url}?token=${crypto.randomUUID()}` });
+  const createAccountTemplate = emailTemplate.createAccount({
+    email: isExistUser.email,
+    verify_url: `${config.front_end_app_url}?token=${crypto.randomUUID()}`,
+  });
   emailHelper.sendEmail(createAccountTemplate);
 };
 

@@ -7,15 +7,27 @@ import { UserService } from './user.service';
 
 const createUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
+    const {
+      email,
+      password,
+      confirm_password,
+      google_id_token,
+      auth_provider,
+    } = req.body;
 
-    const {email,password, confirm_password,google_id_token,auth_provider } = req.body;
-
-    const result = await UserService.createUserToDB({email,password,confirm_password,google_id_token,auth_provider});
-
+    const result = await UserService.createUserToDB({
+      email,
+      password,
+      confirm_password,
+      google_id_token,
+      auth_provider,
+    });
+    const responseData = auth_provider === 'local' ? undefined : result;
     sendResponse(res, {
       success: true,
       statusCode: StatusCodes.OK,
-      message: 'User created successfully'
+      message: auth_provider === 'local' ? 'User created successfully. Please verify your email.' : 'User created successfully',
+      ...(responseData && { data: responseData }), // Only include data if not local
     });
   }
 );
@@ -65,12 +77,16 @@ const updateSkypeProfile = catchAsync(async (req: Request, res: Response) => {
   const user = req.user;
   const result = await UserService.updateSkypeProfileToDB(user);
 
-    sendResponse(res, {
-      success: true,
-      statusCode: StatusCodes.OK,
-      message: 'Profile updated skyped successfully.'
-    });
-  }
-);
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Profile updated skyped successfully.',
+  });
+});
 
-export const UserController = { createUser, getUserProfile, updateProfile, updateSkypeProfile };
+export const UserController = {
+  createUser,
+  getUserProfile,
+  updateProfile,
+  updateSkypeProfile,
+};

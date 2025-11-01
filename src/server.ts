@@ -16,6 +16,7 @@ process.on('uncaughtException', error => {
 let server: any;
 async function main() {
   try {
+    console.log(config.database_url);
     mongoose.connect(config.database_url as string);
     logger.info(colors.green('🚀 Database connected successfully'));
 
@@ -42,6 +43,7 @@ async function main() {
     //@ts-ignore
     global.io = io;
   } catch (error) {
+    console.log(error);
     errorLogger.error(colors.red('🤢 Failed to connect Database'));
   }
 

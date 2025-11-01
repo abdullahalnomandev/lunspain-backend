@@ -5,7 +5,7 @@ const createAccount = (values: ICreateAccount) => {
 
   return {
     to: values.email,
-    subject: 'Finish setting up your account',
+    subject: 'Verify your account',
     html: `
 <body style="margin:0;padding:0; min-height:100vh;width:100vw;font-family:'Inter', Arial, sans-serif;">
   <div style="max-width:600px;margin:40px auto 0 auto;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(32,19,67,.18);background:#fff;">
@@ -48,17 +48,31 @@ const resetPassword = (values: IResetPassword) => {
   const data = {
     to: values.email,
     subject: 'Reset your password',
-    html: `<body style="font-family: Arial, sans-serif; background-color: #f9f9f9; margin: 50px; padding: 20px; color: #555;">
-    <div style="width: 100%; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #fff; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-        <img src="https://i.postimg.cc/6pgNvKhD/logo.png" alt="Logo" style="display: block; margin: 0 auto 20px; width:150px" />
-        <div style="text-align: center;">
-            <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">Your single use code is:</p>
-            <div style="background-color: #277E16; width: 80px; padding: 10px; text-align: center; border-radius: 8px; color: #fff; font-size: 25px; letter-spacing: 2px; margin: 20px auto;">${values.otp}</div>
-            <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">This code is valid for 3 minutes.</p>
-                <p style="color: #b9b4b4; font-size: 16px; line-height: 1.5; margin-bottom: 20px;text-align:left">If you didn't request this code, you can safely ignore this email. Someone else might have typed your email address by mistake.</p>
-        </div>
+    html: `
+<body style="margin:0;padding:0;min-height:100vh;width:100vw;font-family:'Inter',Arial,sans-serif;background:#f6f8fa;">
+  <div style="max-width:600px;margin:40px auto;padding:40px;background:#fff;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.1);">
+    <h1 style="color:#20274d;font-size:1.6rem;font-weight:700;margin-bottom:16px;">Reset your password</h1>
+    <p style="color:#333;font-size:16px;line-height:1.6;margin-bottom:24px;">
+      We received a request to reset your password. Click the button below to continue:
+    </p>
+
+    <a href="${values.resetLink}" 
+      style="display:inline-block;background:#277E16;color:#fff;text-decoration:none;
+      font-size:16px;font-weight:600;padding:12px 28px;border-radius:6px;margin:20px 0;">
+      Reset Password
+    </a>
+
+    <hr style="border:none;border-top:1px solid #eee;margin:30px 0;">
+    <div style="text-align:center;color:#888;font-size:13px;">
+      You're receiving this email because you have an account with LunaSpin.app
     </div>
-</body>`,
+    <div style="text-align:center;margin-top:10px;">
+      <a href="#" style="color:#888;text-decoration:none;margin:0 10px;">Privacy Policy</a> •
+      <a href="#" style="color:#888;text-decoration:none;margin:0 10px;">Terms</a>
+    </div>
+  </div>
+</body>
+`,
   };
   return data;
 };
@@ -99,5 +113,5 @@ export const emailTemplate = {
   createAccount,
   resetPassword,
   updateCompletedWelcomeEmail,
-  completeAccount
+  completeAccount,
 };

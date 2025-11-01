@@ -34,16 +34,14 @@ const forgetPassword = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
     success: true,
     statusCode: StatusCodes.OK,
-    message:
-      'Please check your email. We have sent you a one-time passcode (OTP).',
+    message: 'Please check your email. We have sent you a password reset link.',
     data: result,
   });
 });
 
 const resetPassword = catchAsync(async (req: Request, res: Response) => {
-  const token = req.headers.authorization;
   const { ...resetData } = req.body;
-  const result = await AuthService.resetPasswordToDB(token!, resetData);
+  const result = await AuthService.resetPasswordToDB(resetData);
 
   sendResponse(res, {
     success: true,
@@ -65,14 +63,16 @@ const changePassword = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-
 const resendEmail = catchAsync(async (req: Request, res: Response) => {
   const email = req.body.email;
   await AuthService.resendEmailToDB(email);
 
-  sendResponse(res, { success: true, statusCode: StatusCodes.OK, message: 'Email sent successfully' });
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Email sent successfully',
+  });
 });
-
 
 export const AuthController = {
   resendEmail,

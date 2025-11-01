@@ -10,6 +10,7 @@ const profileSchema = z.object({
   lavel_of_exprience: z.string().optional(),
   image: z.string().optional(),
   cover_image: z.string().optional(),
+  username: z.string().optional(),
 });
 
 const createUserZodSchema = z.object({
@@ -18,10 +19,10 @@ const createUserZodSchema = z.object({
     role: z.string().optional(),
     email: z
       .string({ required_error: 'Email is required' })
-      .email('Invalid email format'),
+      .email('Invalid email format').optional(),
     password: z
       .string({ required_error: 'Password is required' })
-      .min(8, 'Password must be at least 8 characters'),
+      .min(8, 'Password must be at least 8 characters').optional(),
     status: z.enum(['active', 'delete']).optional(),
     verified: z.boolean().optional(),
     token: z.string().optional(),

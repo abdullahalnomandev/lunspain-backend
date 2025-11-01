@@ -15,6 +15,7 @@ export interface IUserProfile {
 }
 
 export interface IUser {
+  _id: Types.ObjectId;
   profile: (IUserProfile & { _id: Types.ObjectId });
   confirm_password?:string;
   email: string;
