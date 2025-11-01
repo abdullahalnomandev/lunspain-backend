@@ -1,0 +1,103 @@
+import { ICreateAccount, IResetPassword } from '../types/emailTamplate';
+
+const createAccount = (values: ICreateAccount) => {
+  const verificationUrl = values.verify_url || '#';
+
+  return {
+    to: values.email,
+    subject: 'Finish setting up your account',
+    html: `
+<body style="margin:0;padding:0; min-height:100vh;width:100vw;font-family:'Inter', Arial, sans-serif;">
+  <div style="max-width:600px;margin:40px auto 0 auto;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(32,19,67,.18);background:#fff;">
+    <div style="background:url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80') no-repeat center center / cover;height:80px;"></div>
+    <div style="padding:48px 32px 32px 32px;">
+      <h1 style="color:#20274d;font-size:1.7rem;font-weight:800;margin-bottom:22px;">Finish setting up your account</h1>
+      <p style="color:#222;font-size:17px;line-height:1.6;margin-bottom:22px;">It's fine, we get it–all this talk about your passion has inspired you to drop everything, and go out and get your heart pumping!</p>
+      <p style="color:#222;font-size:17px;line-height:1.6;margin-bottom:35px;">But before we all forget again, shall we jump back into finishing the set up of your LunaSpin account?</p>
+      <a href="${verificationUrl}" style="display:block;text-align:center;background:#37dfb2;color:#20274d;font-size:17px;border-radius:7px;text-decoration:none;font-weight:800;padding:17px 0;margin-bottom:12px;transition: background .2s;">
+        Verify Email
+      </a>
+      <div style="color:#888;font-size:14px;text-align:center;margin-bottom:35px;">
+        If the button above does not work, copy the below URL into your web browser:<br>
+        <span style="color:#6272c8;text-decoration:underline;">${verificationUrl}</span>
+      </div>
+      <div style="margin-bottom:32px;">
+        <span style="color:#272d6a;font-size:17px;font-weight:700;">Keep going!</span><br>
+        <span style="color:#535a86;font-size:16px;">LunaSpin Team</span>
+      </div>
+      <hr style="border:none;border-top:1px solid #e4e4e4;margin:28px 0 18px 0;" />
+      <div style="color:#7f7f90;text-align:center;font-size:13px;margin-bottom:14px;">
+        You're receiving this email because you have an account with LunaSpin.app
+      </div>
+      <div style="display:flex;justify-content:center;gap:30px;color:#7f7f90;font-size:14px;">
+        <a href="#" style="color:#7f7f90;text-decoration:none;">Shop</a>
+        <a href="#" style="color:#7f7f90;text-decoration:none;">Contact Us</a>
+        <a href="#" style="color:#7f7f90;text-decoration:none;">Privacy Policy</a>
+        <a href="#" style="color:#7f7f90;text-decoration:none;">Terms of Use</a>
+      </div>
+      <div style="text-align:center;color:#b2b6d1;font-size:15px;font-weight:600;margin:23px 0 0 0;">
+        DISCOVER & INSPIRE AT LUNASPIN.APP
+      </div>
+    </div>
+  </div>
+</body>`,
+  };
+};
+
+const resetPassword = (values: IResetPassword) => {
+  const data = {
+    to: values.email,
+    subject: 'Reset your password',
+    html: `<body style="font-family: Arial, sans-serif; background-color: #f9f9f9; margin: 50px; padding: 20px; color: #555;">
+    <div style="width: 100%; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #fff; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+        <img src="https://i.postimg.cc/6pgNvKhD/logo.png" alt="Logo" style="display: block; margin: 0 auto 20px; width:150px" />
+        <div style="text-align: center;">
+            <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">Your single use code is:</p>
+            <div style="background-color: #277E16; width: 80px; padding: 10px; text-align: center; border-radius: 8px; color: #fff; font-size: 25px; letter-spacing: 2px; margin: 20px auto;">${values.otp}</div>
+            <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">This code is valid for 3 minutes.</p>
+                <p style="color: #b9b4b4; font-size: 16px; line-height: 1.5; margin-bottom: 20px;text-align:left">If you didn't request this code, you can safely ignore this email. Someone else might have typed your email address by mistake.</p>
+        </div>
+    </div>
+</body>`,
+  };
+  return data;
+};
+
+const updateCompletedWelcomeEmail = (email: string) => {
+  return {
+    to: email,
+    subject: 'Welcome to Lunspain',
+    html: `
+    <body>
+    <h1>Welcome to Lunspain</h1>
+    <p>Your profile has been updated successfully.</p>
+    </body>
+  `,
+  };
+};
+
+const completeAccount = (email: string) => {
+  return {
+    to: email,
+    subject: 'Complete your Lunspain account',
+    html: `
+    <body style="font-family: Arial, sans-serif; background-color: #f9f9f9; margin: 50px; padding: 20px; color: #555;">
+    <div style="width: 100%; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #fff; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+        <img src="https://i.postimg.cc/6pgNvKhD/logo.png" alt="Logo" style="display: block; margin: 0 auto 20px; width:150px" />
+        <div style="text-align: center;">
+            <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">Your account has been completed successfully.</p>
+        </div>
+    </div>
+    <h1>Finish setting up your Lunspain account</h1>
+    <p>Your account has been completed successfully.</p>
+    </body>
+  `,
+  };
+};
+
+export const emailTemplate = {
+  createAccount,
+  resetPassword,
+  updateCompletedWelcomeEmail,
+  completeAccount
+};
