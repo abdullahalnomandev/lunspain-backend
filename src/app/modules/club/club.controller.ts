@@ -3,11 +3,48 @@ import { StatusCodes } from 'http-status-codes';
 import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
 import { ClubService } from './club.service';
+import { getSingleFilePath } from '../../../shared/getFilePath';
 
 const createClub = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const payload = req.body;
-    const result = await ClubService.createClub(payload);
+  
+    const user = req.user;
+    let image = getSingleFilePath(req.files, 'image');
+    let cover_image = getSingleFilePath(req.files, 'cover_image');
+
+    const data: any = {
+      ...req.body,
+      club_creator: user?.id,
+    };
+
+    if (image && image !== 'undefined') {
+      data.image = image;
+    }
+    if (cover_image && cover_image !== 'undefined') {
+      data.cover_image = cover_image;
+    }
+
+    if (Array.isArray(data.club_members)) {
+      data.club_members = data.club_members.map((member: any) => {
+        try {
+          if (typeof member === 'string') {
+            const fixed = member
+              .replace(/'/g, '"')
+              .replace(/(\w+):/g, '"$1":'); 
+    
+            return JSON.parse(fixed);
+          }
+          return member;
+        } catch (e) {
+          console.error("Failed to parse club_member:", member, e);
+          return member;
+        }
+      });
+    }
+    
+
+
+    const result = await ClubService.createClub(data);
 
     sendResponse(res, {
       success: true,

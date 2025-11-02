@@ -17,7 +17,7 @@ export type IClub = {
       user_Id: Schema.Types.ObjectId;
     }
   ];
-  club_logo: string;
-  club_image: string;
+  image: string;
+  cover_image: string;
 };
 export type ClubModel = Model<IClub, Record<string, unknown>>;

@@ -2,10 +2,27 @@ import { Club } from './club.model';
 import { IClub } from './club.interface';
 import QueryBuilder from '../../builder/QueryBuilder';
 import { Types } from 'mongoose';
+import { CLUB_ROLE } from './club.constant';
+import { emailTemplate } from '../../../shared/emailTemplate';
+import { User } from '../user/user.model';
+import { emailHelper } from '../../../helpers/emailHelper';
 
 //Create a new club
 const createClub = async (payload: IClub) => {
+
+  const isExistThreeMember = await Club.countDocuments({ club_members: { $size: 3 } });
+  if (isExistThreeMember >= 4) {
+    throw new Error('You can only create a club with up to 3 members');
+  }
+  const clubCreator = await User.findById(payload.club_creator);
+
+  payload.club_members.push({ user_Id: payload.club_creator, role: CLUB_ROLE.CLUB_MANAGER });
   const newClub = await Club.create(payload);
+
+  const welcomeEmailTemplate = emailTemplate.WelcomMessageForClubCreation(
+    clubCreator?.email as string
+  );
+  emailHelper.sendEmail(welcomeEmailTemplate);
   return newClub;
 };
 
@@ -20,7 +37,7 @@ const getAllClubs = async (query: Record<string, any>) => {
 
   const result = await clubQuery.modelQuery;
 
-  return {result };
+  return { result };
 };
 
 //Get single club by ID
@@ -35,7 +52,7 @@ const getSingleClub = async (id: string) => {
 
 
 //Update a club by ID
- 
+
 const updateClub = async (id: string, payload: Partial<IClub>) => {
   if (!Types.ObjectId.isValid(id)) throw new Error('Invalid club ID');
 
@@ -47,7 +64,7 @@ const updateClub = async (id: string, payload: Partial<IClub>) => {
 };
 
 // Delete a club by ID
- 
+
 const deleteClub = async (id: string) => {
   if (!Types.ObjectId.isValid(id)) throw new Error('Invalid club ID');
 

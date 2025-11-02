@@ -4,14 +4,15 @@ import auth from '../../middlewares/auth';
 import validateRequest from '../../middlewares/validateRequest';
 import { ClubController } from './club.controller';
 import { ClubValidation } from './club.validation';
+import fileUploadHandler from '../../middlewares/fileUploadHandler';
 
 const router = express.Router();
 
 router
   .route('/')
   .post(
-    auth(USER_ROLES.ADMIN),
-    validateRequest(ClubValidation.createClubZodSchema),
+    auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+    fileUploadHandler(),
     ClubController.createClub
   )
   .get(ClubController.getAllClubs);

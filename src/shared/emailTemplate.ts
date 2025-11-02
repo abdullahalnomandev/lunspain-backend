@@ -109,9 +109,23 @@ const completeAccount = (email: string) => {
   };
 };
 
+
+const WelcomMessageForClubCreation = (email: string) => {
+  return {
+    to: email,
+    subject: 'Welcome to Lunspain',
+    html: `
+    <body>
+    <h1>Welcome to Lunspain</h1>
+    <p>Your club has been created successfully.</p>
+  `,
+  };
+};
+
 export const emailTemplate = {
   createAccount,
   resetPassword,
   updateCompletedWelcomeEmail,
   completeAccount,
+  WelcomMessageForClubCreation,
 };

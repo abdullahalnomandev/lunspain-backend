@@ -3,7 +3,7 @@ import { ClubModel, IClub } from './club.interface';
 import { CLUB_ROLE } from './club.constant';
 
 const clubSchema = new Schema<IClub, ClubModel>(
-    {
+  {
     name: {
       type: String,
       required: true,
@@ -54,10 +54,10 @@ const clubSchema = new Schema<IClub, ClubModel>(
         _id: false
       },
     ],
-    club_logo: {
+    image: {
       type: String,
     },
-    club_image: {
+    cover_image: {
       type: String,
     },
   },
