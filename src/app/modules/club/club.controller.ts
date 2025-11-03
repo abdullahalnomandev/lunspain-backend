@@ -57,13 +57,14 @@ const createClub = catchAsync(
 
 const getAllClubs = catchAsync(async (req: Request, res: Response) => {
   const query = req.query as Record<string, any>;
-  const { result } = await ClubService.getAllClubs(query);
+  const result  = await ClubService.getAllClubs(req.user?.id, query);
 
   sendResponse(res, {
     success: true,
     statusCode: StatusCodes.OK,
     message: 'Clubs retrieved successfully',
-    data: result,
+    pagination:result.pagination,
+    data: result.data,
   });
 });
 
@@ -143,6 +144,33 @@ const getClubsByCreator = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const joinClub = catchAsync(async (req: Request, res: Response) => {
+  const { clubId } = req.params;
+  const  userId  = req?.user?.id;
+
+  const result = await ClubService.joinClub(clubId, userId);
+  
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Successfully joined the club'
+  });
+});
+
+
+const getClubs = catchAsync(async (req: Request, res: Response) => {
+  const userId = req?.user?.id;
+  const result = await ClubService.getClubs(userId, req.query);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Clubs retrieved successfully',
+    data: result,
+  });
+});
+
+
 export const ClubController = {
   createClub,
   getAllClubs,
@@ -152,4 +180,6 @@ export const ClubController = {
   addMemberToClub,
   removeMemberFromClub,
   getClubsByCreator,
+  joinClub,
+  getClubs
 };

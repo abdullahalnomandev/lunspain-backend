@@ -32,6 +32,24 @@ const createUser = catchAsync(
   }
 );
 
+
+const getAllUsers = catchAsync(async (req: Request, res: Response) => {
+  const result = await UserService.getAllUsers(req.query);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Users retrieved successfully',
+    pagination: result.pagination,
+    data: result.data,
+  });
+});
+
+
+
+
+
+
 const getUserProfile = catchAsync(async (req: Request, res: Response) => {
   const user = req.user;
   const result = await UserService.getUserProfileFromDB(user);
@@ -118,5 +136,6 @@ export const UserController = {
   updateProfile,
   updateSkypeProfile,
   followUser,
-  unfollowUser
+  unfollowUser,
+  getAllUsers
 };

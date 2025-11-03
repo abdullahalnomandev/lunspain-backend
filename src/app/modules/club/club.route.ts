@@ -15,8 +15,18 @@ router
     fileUploadHandler(),
     ClubController.createClub
   )
-  .get(ClubController.getAllClubs);
+  .get(
+    auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+    ClubController.getAllClubs
+  );
 
+router
+  .route('/all-clubs')
+  .get(
+    auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+    ClubController.getClubs
+  );
+  
 router
   .route('/:id')
   .get(ClubController.getSingleClub)
@@ -32,6 +42,15 @@ router
   .post(
     auth(USER_ROLES.ADMIN),
     ClubController.addMemberToClub
+  );
+
+
+
+router
+  .route('/:clubId/join')
+  .post(
+    auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+    ClubController.joinClub
   );
 
 router

@@ -14,7 +14,7 @@ export type IClub = {
   club_members: [
     {
       role: CLUB_ROLE.USER | CLUB_ROLE.CLUB_MANAGER;
-      user_Id: Schema.Types.ObjectId;
+      user_id: Schema.Types.ObjectId;
     }
   ];
   image: string;

@@ -20,9 +20,10 @@ router
 router
   .route('/profile/skip')
   .post(auth(USER_ROLES.ADMIN, USER_ROLES.USER), UserController.updateSkypeProfile)
-  
+
 router
   .route('/')
+  .get(auth(USER_ROLES.ADMIN, USER_ROLES.USER) , UserController.getAllUsers)
   .post(
     validateRequest(UserValidation.createUserZodSchema),
     UserController.createUser
@@ -30,11 +31,11 @@ router
 
 router
   .route('/follow/:id')
-  .post(auth(USER_ROLES.ADMIN, USER_ROLES.USER , USER_ROLES.SUPER_ADMIN ), UserController.followUser)
-  
+  .post(auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN), UserController.followUser)
+
 router
   .route('/unfollow/:id')
-  .post(auth(USER_ROLES.ADMIN, USER_ROLES.USER , USER_ROLES.SUPER_ADMIN ), UserController.unfollowUser)
+  .post(auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN), UserController.unfollowUser)
 
 
 export const UserRoutes = router;

@@ -10,6 +10,8 @@ import { emailTemplate } from '../../../shared/emailTemplate';
 import setCronJob from '../../../shared/setCronJob';
 import { jwtHelper } from '../../../helpers/jwtHelper';
 import { getAppleUserInfoWithToken, getUserInfoWithToken } from './user.util';
+import QueryBuilder from '../../builder/QueryBuilder';
+import { userSearchableField } from './user.constant';
 
 const createUserToDB = async (payload: Partial<IUser>): Promise<IUser | { accessToken: string }> => {
   if (
@@ -183,6 +185,34 @@ const updateSkypeProfileToDB = async (
 };
 
 
+const getAllUsers = async (query: Record<string, any>) => {
+  const result = new QueryBuilder(User.find(), query)
+    .paginate()
+    .search(userSearchableField)
+    .fields()
+    .filter()
+    .sort();
+
+  const data = await result.modelQuery
+    // .populate({
+    //   path: "airlineVerification",
+    //   match: { paymentStatus: "paid" },
+    //   select: "designation plan employeeId images paymentStatus paymentMethod",
+    //   populate: {
+    //     path: "plan",
+    //     select: "-active",
+    //   },
+    // })
+    .lean();
+
+  const pagination = await result.getPaginationInfo();
+
+  return {
+    pagination,
+    data,
+  };
+};
+
 
 export const followUser = async (userId: string, targetId: string) => {
   if (userId === targetId) {
@@ -237,5 +267,6 @@ export const UserService = {
   updateSkypeProfileToDB,
   followUser,
   unfollowUser,
-  getUserStats
+  getUserStats,
+  getAllUsers
 };

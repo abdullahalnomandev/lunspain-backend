@@ -46,7 +46,7 @@ const clubSchema = new Schema<IClub, ClubModel>(
           enum: Object.values(CLUB_ROLE),
           default: CLUB_ROLE.USER,
         },
-        user_Id: {
+        user_id: {
           type: Schema.Types.ObjectId,
           ref: 'User',
           required: true,
