@@ -12,8 +12,15 @@ import { jwtHelper } from '../../../helpers/jwtHelper';
 import { getAppleUserInfoWithToken, getUserInfoWithToken } from './user.util';
 import QueryBuilder from '../../builder/QueryBuilder';
 import { userSearchableField } from './user.constant';
+import mongoose, { Types } from 'mongoose';
+import { Post } from '../post/post.model';
+import pick from '../../../shared/pick';
+import { IPaginationOptions } from '../../../types/pagination';
+import { paginationHelper } from '../../../helpers/paginationHelper';
 
-const createUserToDB = async (payload: Partial<IUser>): Promise<IUser | { accessToken: string }> => {
+const createUserToDB = async (
+  payload: Partial<IUser>
+): Promise<IUser | { accessToken: string }> => {
   if (
     !payload.password &&
     !payload.google_id_token &&
@@ -27,7 +34,7 @@ const createUserToDB = async (payload: Partial<IUser>): Promise<IUser | { access
 
   let isValid = false;
 
-  //GOOGLE 
+  //GOOGLE
   if (payload.auth_provider === 'google' && payload.google_id_token) {
     isValid = true;
     const tokenData = await getUserInfoWithToken(payload?.google_id_token);
@@ -51,7 +58,8 @@ const createUserToDB = async (payload: Partial<IUser>): Promise<IUser | { access
   }
   const createUser = await User.create(payload);
 
-  if (!createUser || !isValid) throw new ApiError(StatusCodes.BAD_REQUEST, 'Failed to create user');
+  if (!createUser || !isValid)
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Failed to create user');
 
   if (isValid && createUser && payload.auth_provider === 'local') {
     const createAccountTemplate = emailTemplate.createAccount({
@@ -71,12 +79,11 @@ const createUserToDB = async (payload: Partial<IUser>): Promise<IUser | { access
   }
 };
 
-const getUserProfileFromDB = async (
-  user: JwtPayload
-): Promise<any> => {
+const getUserProfileFromDB = async (user: JwtPayload): Promise<any> => {
   const { id } = user;
   // Only unselect the arrays but still need to count their lengths, so will fetch their counts
-  const isExistUser = await User.findById(id).lean();
+  const isExistUser = await User.findById(id, '-verified -role -token').lean();
+  const userPosts = await Post.find({ creator: id }, '-creator -likes').lean();
   if (!isExistUser) {
     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
   }
@@ -86,10 +93,14 @@ const getUserProfileFromDB = async (
     ...isExistUser,
     profile: {
       ...isExistUser.profile,
-      totalFollower: isExistUser.profile?.followers ? isExistUser.profile.followers.length : 0,
-      totalFollowing: isExistUser.profile?.following ? isExistUser.profile.following.length : 0,
+      totalFollower: isExistUser.profile?.followers
+        ? isExistUser.profile.followers.length
+        : 0,
+      totalFollowing: isExistUser.profile?.following
+        ? isExistUser.profile.following.length
+        : 0,
     },
-
+    posts: userPosts,
   };
 
   // Remove the actual lists from the response
@@ -184,7 +195,6 @@ const updateSkypeProfileToDB = async (
   return isExistUser;
 };
 
-
 const getAllUsers = async (query: Record<string, any>) => {
   const result = new QueryBuilder(User.find(), query)
     .paginate()
@@ -213,52 +223,143 @@ const getAllUsers = async (query: Record<string, any>) => {
   };
 };
 
-
 export const followUser = async (userId: string, targetId: string) => {
   if (userId === targetId) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, "You cannot follow yourself");
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'You cannot follow yourself');
   }
 
   await User.findByIdAndUpdate(userId, {
-    $addToSet: { "profile.following": targetId }
+    $addToSet: { 'profile.following': targetId },
   });
 
   await User.findByIdAndUpdate(targetId, {
-    $addToSet: { "profile.followers": userId }
+    $addToSet: { 'profile.followers': userId },
   });
-
 };
-
 
 export const unfollowUser = async (userId: string, targetId: string) => {
-
   if (userId === targetId) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, "You cannot unfollow yourself");
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'You cannot unfollow yourself');
   }
 
   await User.findByIdAndUpdate(userId, {
-    $pull: { "profile.following": targetId }
+    $pull: { 'profile.following': targetId },
   });
 
   await User.findByIdAndUpdate(targetId, {
-    $pull: { "profile.followers": userId }
+    $pull: { 'profile.followers': userId },
   });
-
 };
-
-
 
 export const getUserStats = async (userId: string, targetId: string) => {
   const user = await User.findById(targetId).lean();
   if (!user) {
-    throw new ApiError(StatusCodes.NOT_FOUND, "User not found");
+    throw new ApiError(StatusCodes.NOT_FOUND, 'User not found');
   }
   return {
     followers: user.profile?.followers?.length,
-    following: user.profile?.following?.length
+    following: user.profile?.following?.length,
   };
 };
 // const isFollowing = user.following.includes(targetUserId);
+
+const getUserProfileByIdFromDB = async (
+  userId: string,
+  requestUserId: string
+): Promise<IUser & { isFollowing: boolean }> => {
+  const objectUserId = new mongoose.Types.ObjectId(userId);
+
+  // MongoDB query to fetch user and check if followers includes userId
+  const user = await User.aggregate([
+    { $match: { _id: new mongoose.Types.ObjectId(requestUserId) } },
+    {
+      $addFields: {
+        isFollowing: { $in: [objectUserId, '$profile.followers'] },
+      },
+    },
+    {
+      $project: {
+        password: 0,
+        verified: 0,
+        role: 0,
+      },
+    },
+    {
+      $lookup: {
+        from: 'posts',
+        localField: '_id',
+        foreignField: 'creator',
+        as: 'posts',
+      },
+    },
+  ]).exec();
+
+  if (!user || !user[0]) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'User not found');
+  }
+
+  return user[0];
+};
+
+const getFollowerListFromDB = async (
+  requestUserId: string,
+  patinationOptions: IPaginationOptions
+) => {
+  const user = await User.findById(requestUserId)
+    .select('profile.followers')
+    .populate({
+      path: 'profile.followers',
+      select: 'profile.firstName profile.username profile.lastName profile.image',
+    })
+    .lean();
+
+  if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'User not found');
+  const { page, limit, skip, sortBy, sortOrder } = paginationHelper.calculatePagination(patinationOptions);
+
+  const total = user.profile?.followers?.length || 0;
+  const paginatedFollowers = user.profile?.followers?.slice(skip, skip + limit) || [];
+  return {
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPage: Math.ceil(total / limit),
+    },
+    data: paginatedFollowers,
+  };
+};
+
+const getFollowingListFromDB = async (
+  requestUserId: string,
+  patinationOptions: IPaginationOptions
+) => {
+  const user = await User.findById(requestUserId)
+    .select('profile.following')
+    .populate({
+      path: 'profile.following',
+      select: 'profile.firstName profile.username profile.lastName profile.image',
+    })
+    .lean();
+
+    console.log({requestUserId:4})
+
+  if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'User not found');
+  const { page, limit,skip, sortBy, sortOrder } = paginationHelper.calculatePagination(patinationOptions);
+
+  const total = user.profile?.following?.length || 0;
+  const paginatedFollowing = user.profile?.following?.slice(skip, skip + limit) || [];
+  return {
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPage: Math.ceil(total / limit),
+    },
+    data: paginatedFollowing,
+  };
+};
+
+
 
 export const UserService = {
   createUserToDB,
@@ -268,5 +369,8 @@ export const UserService = {
   followUser,
   unfollowUser,
   getUserStats,
-  getAllUsers
+  getAllUsers,
+  getUserProfileByIdFromDB,
+  getFollowerListFromDB,
+  getFollowingListFromDB,
 };

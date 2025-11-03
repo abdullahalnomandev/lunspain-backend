@@ -4,6 +4,8 @@ import catchAsync from '../../../shared/catchAsync';
 import { getSingleFilePath } from '../../../shared/getFilePath';
 import sendResponse from '../../../shared/sendResponse';
 import { UserService } from './user.service';
+import pick from '../../../shared/pick';
+import { paginationFields } from '../../../constants/pagination';
 
 const createUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -26,12 +28,14 @@ const createUser = catchAsync(
     sendResponse(res, {
       success: true,
       statusCode: StatusCodes.OK,
-      message: auth_provider === 'local' ? 'User created successfully. Please verify your email.' : 'User created successfully',
+      message:
+        auth_provider === 'local'
+          ? 'User created successfully. Please verify your email.'
+          : 'User created successfully',
       ...(responseData && { data: responseData }), // Only include data if not local
     });
   }
 );
-
 
 const getAllUsers = catchAsync(async (req: Request, res: Response) => {
   const result = await UserService.getAllUsers(req.query);
@@ -44,11 +48,6 @@ const getAllUsers = catchAsync(async (req: Request, res: Response) => {
     data: result.data,
   });
 });
-
-
-
-
-
 
 const getUserProfile = catchAsync(async (req: Request, res: Response) => {
   const user = req.user;
@@ -112,7 +111,7 @@ const followUser = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'Successfully followed the user.'
+    message: 'Successfully followed the user.',
   });
 });
 
@@ -126,7 +125,62 @@ const unfollowUser = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'Successfully unfollowed the user.'
+    message: 'Successfully unfollowed the user.',
+  });
+});
+
+// Add getUserProfileById
+const getUserProfileById = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  const requestUser = req.params?.id;
+
+  const result = await UserService.getUserProfileByIdFromDB(
+    userId,
+    requestUser
+  );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Profile data retrieved successfully',
+    data: result,
+  });
+});
+
+// Add getFollowerList
+const getFollowerList = catchAsync(async (req: Request, res: Response) => {
+  const requestUserId = req.params?.id;
+
+  const patinationOptions = pick(req.query, paginationFields);
+  const result = await UserService.getFollowerListFromDB(
+    requestUserId,
+    patinationOptions
+  );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Follower list retrieved successfully',
+    pagination: result.pagination,
+    data: result.data,
+  });
+});
+// Add getFollowingList
+const getFollowingList = catchAsync(async (req: Request, res: Response) => {
+  const requestUserId = req.params?.id;
+
+  const patinationOptions = pick(req.query, paginationFields);
+  const result = await UserService.getFollowingListFromDB(
+    requestUserId,
+    patinationOptions
+  );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Following list retrieved successfully',
+    pagination: result.pagination,
+    data: result.data,
   });
 });
 
@@ -137,5 +191,8 @@ export const UserController = {
   updateSkypeProfile,
   followUser,
   unfollowUser,
-  getAllUsers
+  getAllUsers,
+  getUserProfileById,
+  getFollowerList,
+  getFollowingList,
 };
