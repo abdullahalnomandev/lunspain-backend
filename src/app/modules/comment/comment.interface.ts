@@ -1,0 +1,21 @@
+import { Model, Types } from 'mongoose';
+import { IUser } from '../user/user.interface';
+import { IPOST } from '../post/post.interface';
+import { COMMENT_REACTION } from './comment.constant';
+
+export type IComment = {
+  post: Types.ObjectId | IPOST;
+  creator: Types.ObjectId | IUser;
+  text?: string;
+  image?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  likes?: [
+    {
+      react_type: COMMENT_REACTION;
+      user: Types.ObjectId;
+    }
+  ];
+};
+
+export type CommentModel = Model<IComment>;

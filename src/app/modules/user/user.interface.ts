@@ -12,6 +12,9 @@ export interface IUserProfile {
   image?: string;
   cover_image?: string;
   username?:string;
+  followers?: [Types.ObjectId], 
+  following?: [Types.ObjectId]
+
 }
 
 export interface IUser {

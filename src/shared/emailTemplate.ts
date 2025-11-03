@@ -122,10 +122,25 @@ const WelcomMessageForClubCreation = (email: string) => {
   };
 };
 
+
+const WelcomMessageForClassCreation = (email: string) => {
+  return {
+    to: email,
+    subject: 'Welcome to Lunspain',
+    html: `
+    <body>
+    <h1>Welcome to Lunspain</h1>
+    <p>Your class has been created successfully.</p>
+    </body>
+  `,
+  };
+};
+
 export const emailTemplate = {
   createAccount,
   resetPassword,
   updateCompletedWelcomeEmail,
   completeAccount,
   WelcomMessageForClubCreation,
+  WelcomMessageForClassCreation
 };

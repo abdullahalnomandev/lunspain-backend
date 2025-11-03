@@ -11,7 +11,6 @@ const createPost = catchAsync(
     async (req: Request, res: Response, next: NextFunction) => {
         const user = req.user;
         let image = getSingleFilePath(req.files, 'image');
-        let cover_image = getSingleFilePath(req.files, 'cover_image');
 
         const data: any = {
             ...req.body,

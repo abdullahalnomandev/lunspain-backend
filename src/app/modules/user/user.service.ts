@@ -11,7 +11,7 @@ import setCronJob from '../../../shared/setCronJob';
 import { jwtHelper } from '../../../helpers/jwtHelper';
 import { getAppleUserInfoWithToken, getUserInfoWithToken } from './user.util';
 
-const createUserToDB = async (payload: Partial<IUser>): Promise<IUser | { accessToken: string } > => {
+const createUserToDB = async (payload: Partial<IUser>): Promise<IUser | { accessToken: string }> => {
   if (
     !payload.password &&
     !payload.google_id_token &&
@@ -28,18 +28,18 @@ const createUserToDB = async (payload: Partial<IUser>): Promise<IUser | { access
   //GOOGLE 
   if (payload.auth_provider === 'google' && payload.google_id_token) {
     isValid = true;
-     const tokenData = await getUserInfoWithToken(payload?.google_id_token);
+    const tokenData = await getUserInfoWithToken(payload?.google_id_token);
     payload.email = tokenData?.data?.email;
     payload.verified = true;
   }
-   // APPLE
+  // APPLE
   else if (payload.auth_provider === 'apple' && payload.apple_id_token) {
     isValid = true;
     // will letter add apple id token validation
     const tokenData = await getAppleUserInfoWithToken(payload?.apple_id_token);
     payload.email = tokenData?.data?.email;
     payload.verified = true;
-  } 
+  }
   //LOCAL
   else {
     if (payload.auth_provider === 'local' && payload.password) {
@@ -49,7 +49,7 @@ const createUserToDB = async (payload: Partial<IUser>): Promise<IUser | { access
   }
   const createUser = await User.create(payload);
 
-  if (!createUser || !isValid)  throw new ApiError(StatusCodes.BAD_REQUEST, 'Failed to create user');
+  if (!createUser || !isValid) throw new ApiError(StatusCodes.BAD_REQUEST, 'Failed to create user');
 
   if (isValid && createUser && payload.auth_provider === 'local') {
     const createAccountTemplate = emailTemplate.createAccount({
@@ -65,19 +65,38 @@ const createUserToDB = async (payload: Partial<IUser>): Promise<IUser | { access
       config.jwt.jwt_secret as Secret,
       config.jwt.jwt_expire_in as string
     );
-    return { accessToken: createToken } ;
+    return { accessToken: createToken };
   }
 };
 
 const getUserProfileFromDB = async (
   user: JwtPayload
-): Promise<Partial<IUser>> => {
+): Promise<any> => {
   const { id } = user;
-  const isExistUser = await User.isExistUserById(id);
+  // Only unselect the arrays but still need to count their lengths, so will fetch their counts
+  const isExistUser = await User.findById(id).lean();
   if (!isExistUser) {
     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
   }
-  return isExistUser;
+
+  // Prepare response without full followers/following arrays, only counts
+  const userProfile = {
+    ...isExistUser,
+    profile: {
+      ...isExistUser.profile,
+      totalFollower: isExistUser.profile?.followers ? isExistUser.profile.followers.length : 0,
+      totalFollowing: isExistUser.profile?.following ? isExistUser.profile.following.length : 0,
+    },
+
+  };
+
+  // Remove the actual lists from the response
+  if (userProfile.profile) {
+    delete userProfile.profile.followers;
+    delete userProfile.profile.following;
+  }
+
+  return userProfile;
 };
 
 const updateProfileToDB = async (
@@ -107,7 +126,6 @@ const updateProfileToDB = async (
   if (payload.cover_image) {
     unlinkFile(payload.cover_image as string);
   }
-  console.log(payload.year_of_exprience);
   if (!!payload.year_of_exprience) {
     payload.year_of_exprience = Number(payload.year_of_exprience) as any;
   }
@@ -164,9 +182,60 @@ const updateSkypeProfileToDB = async (
   return isExistUser;
 };
 
+
+
+export const followUser = async (userId: string, targetId: string) => {
+  if (userId === targetId) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "You cannot follow yourself");
+  }
+
+  await User.findByIdAndUpdate(userId, {
+    $addToSet: { "profile.following": targetId }
+  });
+
+  await User.findByIdAndUpdate(targetId, {
+    $addToSet: { "profile.followers": userId }
+  });
+
+};
+
+
+export const unfollowUser = async (userId: string, targetId: string) => {
+
+  if (userId === targetId) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "You cannot unfollow yourself");
+  }
+
+  await User.findByIdAndUpdate(userId, {
+    $pull: { "profile.following": targetId }
+  });
+
+  await User.findByIdAndUpdate(targetId, {
+    $pull: { "profile.followers": userId }
+  });
+
+};
+
+
+
+export const getUserStats = async (userId: string, targetId: string) => {
+  const user = await User.findById(targetId).lean();
+  if (!user) {
+    throw new ApiError(StatusCodes.NOT_FOUND, "User not found");
+  }
+  return {
+    followers: user.profile?.followers?.length,
+    following: user.profile?.following?.length
+  };
+};
+// const isFollowing = user.following.includes(targetUserId);
+
 export const UserService = {
   createUserToDB,
   getUserProfileFromDB,
   updateProfileToDB,
   updateSkypeProfileToDB,
+  followUser,
+  unfollowUser,
+  getUserStats
 };

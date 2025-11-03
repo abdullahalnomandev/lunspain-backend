@@ -10,7 +10,7 @@ import { emailHelper } from '../../../helpers/emailHelper';
 //Create a new club
 const createClub = async (payload: IClub) => {
 
-  const isExistThreeMember = await Club.countDocuments({ club_members: { $size: 3 } });
+  const isExistThreeMember = await Club.countDocuments({ club_members: { $size: 4 } });
   if (isExistThreeMember >= 4) {
     throw new Error('You can only create a club with up to 3 members');
   }

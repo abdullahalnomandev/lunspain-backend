@@ -28,4 +28,13 @@ router
     UserController.createUser
   );
 
+router
+  .route('/follow/:id')
+  .post(auth(USER_ROLES.ADMIN, USER_ROLES.USER , USER_ROLES.SUPER_ADMIN ), UserController.followUser)
+  
+router
+  .route('/unfollow/:id')
+  .post(auth(USER_ROLES.ADMIN, USER_ROLES.USER , USER_ROLES.SUPER_ADMIN ), UserController.unfollowUser)
+
+
 export const UserRoutes = router;

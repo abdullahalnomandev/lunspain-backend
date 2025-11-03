@@ -84,9 +84,39 @@ const updateSkypeProfile = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// Add followUser
+const followUser = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  const targetId = req.params.id;
+
+  await UserService.followUser(userId, targetId);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Successfully followed the user.'
+  });
+});
+
+// Add unfollowUser
+const unfollowUser = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  const targetId = req.params.id;
+
+  await UserService.unfollowUser(userId, targetId);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Successfully unfollowed the user.'
+  });
+});
+
 export const UserController = {
   createUser,
   getUserProfile,
   updateProfile,
   updateSkypeProfile,
+  followUser,
+  unfollowUser
 };

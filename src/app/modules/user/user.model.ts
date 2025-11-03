@@ -11,9 +11,9 @@ const profile = {
     type: String,
     trim: true,
   },
-  username:{
-    type:String,
-    trim:true
+  username: {
+    type: String,
+    trim: true
   },
   lastName: {
     type: String,
@@ -40,6 +40,12 @@ const profile = {
   },
   cover_image: {
     type: String,
+  },
+  followers: {
+    type: [{ type: Schema.Types.ObjectId, ref: 'User' }]
+  },
+  following: {
+    type: [{ type: Schema.Types.ObjectId, ref: 'User' }]
   },
 };
 
@@ -129,8 +135,8 @@ userSchema.pre('save', async function (next) {
 
   // Hash password
   this.profile.username = this.profile?.username || this.email.split('@')[0];
-  if(!this.password) return next();
-  this.password = await bcrypt.hash(this.password,Number(config.bcrypt_salt_rounds));
+  if (!this.password) return next();
+  this.password = await bcrypt.hash(this.password, Number(config.bcrypt_salt_rounds));
 
   next();
 });

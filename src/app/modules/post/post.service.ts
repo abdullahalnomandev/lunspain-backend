@@ -1,8 +1,4 @@
 
-import QueryBuilder from '../../builder/QueryBuilder';
-import { Types } from 'mongoose';
-import { emailTemplate } from '../../../shared/emailTemplate';
-import { User } from '../user/user.model';
 import { IPOST } from './post.interface';
 import { Post } from './post.model';
 import ApiError from '../../../errors/ApiError';
@@ -91,6 +87,7 @@ const deletePost = async (userId: string, postId: string) => {
     if (!deletedPost) {
         throw new ApiError(StatusCodes.NOT_FOUND, 'Post not found or you do not have permission to delete this post');
     }
+
     return deletedPost;
 }
 
