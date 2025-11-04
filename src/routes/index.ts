@@ -5,6 +5,7 @@ import { ClubRoutes } from '../app/modules/club/club.route';
 import { PostRoutes } from '../app/modules/post/post.route';
 import { CommentRoutes } from '../app/modules/comment/comment.route';
 import { ClassRoutes } from '../app/modules/class/class.route';
+import { BookingClassRoutes } from '../app/modules/bookingClass/booking.route';
 const router = express.Router();
 
 const apiRoutes = [
@@ -31,6 +32,10 @@ const apiRoutes = [
   {
     path: '/class',
     route: ClassRoutes,
+  },
+  {
+    path: '/book-class-attandence',
+    route: BookingClassRoutes,
   },
 
 ];

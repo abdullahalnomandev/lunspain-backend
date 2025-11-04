@@ -8,6 +8,7 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { Class } from './class.model';
+import { IUserCredit, UserCredit } from '../user/credit/user.credit.model';
 
 dayjs.extend(utc);
 dayjs.extend(isoWeek);
@@ -91,7 +92,6 @@ const createClass = async (payload: IClass) => {
 
 
 // Get classes by club id
-// Utility: generate occurrences for a single class
 const generateOccurrences = (cls: any): Occurrence[] => {
     const occurrences: Occurrence[] = [];
     const today = dayjs().startOf("day");
@@ -136,6 +136,70 @@ const generateOccurrences = (cls: any): Occurrence[] => {
         }
     }
 
+    if (cls.reoccurring_class.repeat === "weekly") {
+        const repeatEvery = cls.reoccurring_class.repeat_every || 1;
+        const repeatDaysOfWeek = cls.reoccurring_class.repeat_days_of_week || [];
+
+        let count = 0;
+        let totalOccurrences =
+            cls.reoccurring_class.total_occurrences || Infinity;
+        let untilDate = cls.reoccurring_class.repeat_untilDate
+            ? dayjs(cls.reoccurring_class.repeat_untilDate).endOf("day")
+            : maxDate;
+
+        // adjust max date if repeat_until is forever
+        if (cls.reoccurring_class.repeat_until === "forever") {
+            untilDate = dayjs().add(1, "year").endOf("day");
+        }
+
+        // Helper to map day names to dayjs day numbers
+        const dayNameToNumber = (dayName: string): number => {
+            const map: Record<string, number> = {
+                sunday: 0,
+                monday: 1,
+                tuesday: 2,
+                wednesday: 3,
+                thursday: 4,
+                friday: 5,
+                saturday: 6,
+            };
+            return map[dayName.toLowerCase()];
+        };
+
+        const allowedWeekdays = repeatDaysOfWeek.map(dayNameToNumber);
+
+        // Start from the first occurrence date
+        let weekCursor = current.clone().startOf("week"); // Start of the week of the initial date
+
+        while (
+            (weekCursor.isSame(untilDate) || weekCursor.isBefore(untilDate)) &&
+            count < totalOccurrences &&
+            (weekCursor.isSame(maxDate) || weekCursor.isBefore(maxDate))
+        ) {
+            // Iterate over each allowed weekday in the current week
+            for (const dayOfWeek of allowedWeekdays) {
+                const candidate = weekCursor.clone().day(dayOfWeek);
+
+                // Skip if candidate is before the initial class date
+                if (candidate.isBefore(current)) continue;
+
+                // Skip if candidate is beyond untilDate or maxDate
+                if (candidate.isAfter(untilDate) || candidate.isAfter(maxDate)) continue;
+
+                // Skip if we've reached totalOccurrences
+                if (count >= totalOccurrences) break;
+
+                // Only include if today or future
+                if (candidate.isSame(today) || candidate.isAfter(today)) {
+                    occurrences.push({ ...cls, date_of_class: candidate.toISOString() });
+                    count++;
+                }
+            }
+
+            // Move to the next repeatEvery week
+            weekCursor = weekCursor.add(repeatEvery, "week");
+        }
+    }
 
     return occurrences;
 };
@@ -184,7 +248,7 @@ const categorizeOccurrences = (occurrences: Occurrence[]): ClassCategories => {
 };
 
 // Main function: get classes by clubId
-export const getClassesByClubId = async (clubId: string): Promise<ClassCategories> => {
+export const getClassesByClubId = async (clubId: string, userId: string): Promise<ClassCategories & { userCredit: any }> => {
     const classes = await Class.find(
         { club: clubId },
         "date_of_class duration start_time reoccurring_class club creator class_status const_per_ticket max_number_of_attendees class_name"
@@ -192,11 +256,18 @@ export const getClassesByClubId = async (clubId: string): Promise<ClassCategorie
 
     const allOccurrences: Occurrence[] = [];
     for (const cls of classes) {
+        cls.book_status = 'cancel'
+        cls.remaining_spaces = 7;
         const occurrences = generateOccurrences(cls);
         allOccurrences.push(...occurrences);
     }
 
-    return categorizeOccurrences(allOccurrences);
+    const userCredit = await UserCredit.findOne({clubId,user:userId}).lean() || {credit:0};
+
+    return {
+        userCredit:userCredit.credit,
+        ...categorizeOccurrences(allOccurrences)
+    };
 };
 
 
@@ -215,3 +286,109 @@ export const ClassService = {
 //     repeat_untilDate ?: Date // If select until_date // ISO date string: "YYYY-MM-DD"
 // },
 
+// const generateOccurrences = (cls: any): Occurrence[] => {
+//     const occurrences: Occurrence[] = [];
+//     const today = dayjs().startOf("day");
+//     const maxDate = dayjs().add(1, "year").endOf("day"); // cap 1 year for forever
+
+//     let current = dayjs(cls.date_of_class).startOf("day");
+
+//     if (cls.reoccurring_class.repeat === "none") {
+//         // only show if today or future
+//         if (current.isSame(today) || current.isAfter(today)) {
+//             occurrences.push({ ...cls, date_of_class: current.toISOString() });
+//         }
+//         return occurrences;
+//     }
+
+//     if (cls.reoccurring_class.repeat === "daily") {
+//         const repeatEvery = cls.reoccurring_class.repeat_every || 1;
+
+//         let count = 0;
+//         let totalOccurrences =
+//             cls.reoccurring_class.total_occurrences || Infinity;
+//         let untilDate = cls.reoccurring_class.repeat_untilDate
+//             ? dayjs(cls.reoccurring_class.repeat_untilDate).endOf("day")
+//             : maxDate;
+
+//         // adjust max date if repeat_until is forever
+//         if (cls.reoccurring_class.repeat_until === "forever") {
+//             untilDate = dayjs().add(1, "year").endOf("day");
+//         }
+
+//         while (
+//             (current.isSame(untilDate) || current.isBefore(untilDate)) &&
+//             count < totalOccurrences &&
+//             (current.isSame(maxDate) || current.isBefore(maxDate))
+//         ) {
+//             if (current.isSame(today) || current.isAfter(today)) {
+//                 occurrences.push({ ...cls, date_of_class: current.toISOString() });
+//             }
+
+//             current = current.add(repeatEvery, "day");
+//             count++;
+//         }
+//     }
+
+
+//     return occurrences;
+// };
+
+// // Utility: categorize occurrences into today / thisWeek / nextWeek / nextMonth / nextYear
+// const categorizeOccurrences = (occurrences: Occurrence[]): ClassCategories => {
+//     const today = dayjs().startOf("day");
+
+//     const startOfThisWeek = today.startOf("isoWeek");
+//     const endOfThisWeek = today.endOf("isoWeek");
+
+//     const startOfNextWeek = endOfThisWeek.add(1, "day").startOf("isoWeek");
+//     const endOfNextWeek = startOfNextWeek.endOf("isoWeek");
+
+//     const startOfNextMonth = today.add(1, "month").startOf("month");
+//     const endOfNextMonth = today.add(1, "month").endOf("month");
+
+//     const startOfNextYear = today.add(1, "year").startOf("year");
+//     const endOfNextYear = today.add(1, "year").endOf("year");
+
+//     const result: ClassCategories = {
+//         today: [],
+//         thisWeek: [],
+//         nextWeek: [],
+//         nextMonth: [],
+//         nextYear: []
+//     };
+
+//     for (const occ of occurrences) {
+//         const occDate = dayjs(occ.date_of_class);
+
+//         if (occDate.isSame(today, "day")) {
+//             result.today.push(occ);
+//         } else if (occDate.isAfter(today) && (occDate.isSame(startOfThisWeek) || occDate.isAfter(startOfThisWeek)) && occDate.isBefore(endOfThisWeek.add(1, 'day'))) {
+//             result.thisWeek.push(occ);
+//         } else if (occDate.isAfter(startOfNextWeek.subtract(1, 'day')) && occDate.isBefore(endOfNextWeek.add(1, 'day'))) {
+//             result.nextWeek.push(occ);
+//         } else if (occDate.isAfter(startOfNextMonth.subtract(1, 'day')) && occDate.isBefore(endOfNextMonth.add(1, 'day'))) {
+//             result.nextMonth.push(occ);
+//         } else if (occDate.isAfter(startOfNextYear.subtract(1, 'day')) && occDate.isBefore(endOfNextYear.add(1, 'day'))) {
+//             result.nextYear.push(occ);
+//         }
+//     }
+
+//     return result;
+// };
+
+// // Main function: get classes by clubId
+// export const getClassesByClubId = async (clubId: string): Promise<ClassCategories> => {
+//     const classes = await Class.find(
+//         { club: clubId },
+//         "date_of_class duration start_time reoccurring_class club creator class_status const_per_ticket max_number_of_attendees class_name"
+//     ).lean();
+
+//     const allOccurrences: Occurrence[] = [];
+//     for (const cls of classes) {
+//         const occurrences = generateOccurrences(cls);
+//         allOccurrences.push(...occurrences);
+//     }
+
+//     return categorizeOccurrences(allOccurrences);
+// };

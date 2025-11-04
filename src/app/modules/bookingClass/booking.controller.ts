@@ -2,34 +2,33 @@ import { NextFunction, Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
-import { getSingleFilePath } from '../../../shared/getFilePath';
-import { ClassService } from './class.service';
+import { BookingClassService } from './booking.service';
 
-const createClass = catchAsync(
+const createBookingClass = catchAsync(
     async (req: Request, res: Response, next: NextFunction) => {
         const userId = req.user?.id;
-        const result = await ClassService.createClass({...req.body,creator:userId});
+        const result = await BookingClassService.createBookingClass({...req.body,user:userId});
 
         sendResponse(res, {
             success: true,
             statusCode: StatusCodes.OK,
-            message: 'Class created successfully',
+            message: 'Booking class created successfully',
             data: result,
         });
     }
 );
 
 
-const getClassesByClubId = catchAsync(
+const getBookingClassesByClubId = catchAsync(
     async (req: Request, res: Response, next: NextFunction) => {
         const clubId = req.params.club_id;
         const userId = req.user?.id;
-        const result = await ClassService.getClassesByClubId(clubId,userId);
+        const result = await BookingClassService.getBookingClassesByClubId(clubId,userId);
 
         sendResponse(res, {
             success: true,
             statusCode: StatusCodes.OK,
-            message: 'Classes retrieved successfully',
+            message: 'Booking classes retrieved successfully',
             data: result,
         });
     }
@@ -38,6 +37,6 @@ const getClassesByClubId = catchAsync(
 
 
 export const ClassController = {
-    createClass,
-    getClassesByClubId
+    createBookingClass,
+    getBookingClassesByClubId
 };
