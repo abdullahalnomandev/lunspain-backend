@@ -20,7 +20,23 @@ const createClass = catchAsync(
 );
 
 
+const getClassesByClubId = catchAsync(
+    async (req: Request, res: Response, next: NextFunction) => {
+        const clubId = req.params.club_id;
+        const result = await ClassService.getClassesByClubId(clubId);
+
+        sendResponse(res, {
+            success: true,
+            statusCode: StatusCodes.OK,
+            message: 'Classes retrieved successfully',
+            data: result,
+        });
+    }
+);
+
+
 
 export const ClassController = {
-    createClass
+    createClass,
+    getClassesByClubId
 };

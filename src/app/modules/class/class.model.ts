@@ -66,13 +66,11 @@ const classSchema = new Schema<IClass>(
                 required: true,
             },
             repeat_every: {
-                type: Number,
-                required: true,
+                type: Number
             },
             repeat_days_of_week: {
                 type: [String],
-                enum: [DAY_OF_WEEK],
-                default: [],
+                enum: [DAY_OF_WEEK]
             },
             day_of_month: {
                 type: Number,
