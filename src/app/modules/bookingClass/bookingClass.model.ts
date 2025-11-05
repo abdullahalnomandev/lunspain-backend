@@ -8,13 +8,18 @@ const bookingClassSchema = new Schema<IBookingClass>(
         coupon_code: { type: String },
         club: { type: Schema.Types.ObjectId, ref: 'Club', required: true },
         user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+        class: { type: Schema.Types.ObjectId, ref: 'Class', required: true },
         class_booking_ref_id: { type: String, required: true },
-        price_of_class: { type: String, required: true },
-        payment_status: { type: String, enum: Object.values(PAYMENT_STATUS), required: true },
-        payment_method: { type: String, enum: Object.values(PAYMENT_METHOD), required: true },
-        attandence_status: { type: String, enum: Object.values(MEMBERS_STATUS), required: true },
+        booking_id: { type: String, required: true },
+        price_of_class: { type: Number, required: true },
+        payment_status: { type: String, enum: Object.values(PAYMENT_STATUS)},
+        payment_method: { type: String, enum: Object.values(PAYMENT_METHOD) },
+        attandence_status: { type: String, enum: Object.values(MEMBERS_STATUS), default: MEMBERS_STATUS.INITIAL, required: true },
+        discount: { type: Number, default: 0 },
     },
     { timestamps: true }
 );
+
+bookingClassSchema.index({ user: 1, club: 1 }, { unique: true });
 
 export const BookingClass = mongoose.model<IBookingClass, BookingClassModel>('BookingClass', bookingClassSchema);

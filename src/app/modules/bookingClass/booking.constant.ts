@@ -1,12 +1,14 @@
 export enum MEMBERS_STATUS {
     ATTEND = 'attend',
     WAIT = 'wait',
-    CANCEL = 'cancel'
+    CANCEL = 'cancel',
+    INITIAL = 'initial'
 }
 
 export enum PAYMENT_STATUS {
     PENDING = 'pending',
-    COMPLETED = 'completed',
+    PAID = 'paid',
+    PAY_IN_PERSON = 'pay_in_person',
     FAILED = 'failed'
 }
 

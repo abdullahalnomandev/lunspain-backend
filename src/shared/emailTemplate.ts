@@ -136,11 +136,56 @@ const WelcomMessageForClassCreation = (email: string) => {
   };
 };
 
+const WelcomMessageForClassBooking = (email: string) => {
+  return {
+    to: email,
+    subject: 'Welcome to Lunspain',
+    html: `
+    <body>
+    <h1>Welcome to Lunspain</h1>
+    <p>Your class has been booked successfully.</p>
+    </body>
+  `,
+  };
+};
+
+
+const WelcomeMessageForWaitingList = (email: string) => {
+  return {
+    to: email,
+    subject: 'Welcome to Lunspain',
+    html: `
+    <body>
+    <h1>Welcome to Lunspain</h1>
+    <p>You have been added to the waiting list for this class.</p>
+    </body>
+  `,
+  };
+};
+
+const WelcomeMessageForCancellation = (email: string) => {
+  return {
+    to: email,
+    subject: 'Welcome to Lunspain',
+    html: `
+    <body>
+    <h1>Welcome to Lunspain</h1>
+    <p>Your class booking has been cancelled successfully.</p>
+    </body>
+  `,
+  };
+};
+
+
+
 export const emailTemplate = {
   createAccount,
   resetPassword,
   updateCompletedWelcomeEmail,
   completeAccount,
   WelcomMessageForClubCreation,
-  WelcomMessageForClassCreation
+  WelcomMessageForClassCreation,
+  WelcomMessageForClassBooking,
+  WelcomeMessageForWaitingList,
+  WelcomeMessageForCancellation,
 };

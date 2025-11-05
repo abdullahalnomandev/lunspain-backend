@@ -25,4 +25,8 @@ export default {
     email: process.env.SUPER_ADMIN_EMAIL,
     password: process.env.SUPER_ADMIN_PASSWORD,
   },
+  stripe: {
+    public_key: process.env.STRIPE_PUBLIC_KEY,
+    secret_key: process.env.STRIPE_SECREAT_KEY,
+  },
 };

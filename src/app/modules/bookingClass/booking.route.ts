@@ -12,12 +12,31 @@ router
         ClassController.createBookingClass
     )
 
-    router
+
+
+
+router.get('/success', ClassController.orderSuccess);
+router.get('/success', ClassController.orderSuccess);
+
+router.post('/cancel-attendence/:class_booking_ref_id',
+    auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+    ClassController.cancelAttendence);
+
+router.get('/attandence-list/:club_id/:class_id/:class_start_date',
+    auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+    ClassController.getAllBookingAttendance);
+
+router.post('/waiting-list',
+    auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+    ClassController.addToWaitingList);
+
+router
     .route('/:club_id')
     .get(
         auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
         ClassController.getBookingClassesByClubId
     )
+
 
 
 export const BookingClassRoutes = router;
