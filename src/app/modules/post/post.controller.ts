@@ -11,6 +11,7 @@ const createPost = catchAsync(
     async (req: Request, res: Response, next: NextFunction) => {
         const user = req.user;
         let image = getSingleFilePath(req.files, 'image');
+        let media = getSingleFilePath(req.files, 'media');
 
         const data: any = {
             ...req.body,
@@ -19,6 +20,9 @@ const createPost = catchAsync(
 
         if (image && image !== 'undefined') {
             data.image = image;
+        }
+        if (media && media !== 'undefined') {
+            data.media = media;
         }
         const result = await PostService.createPost(data);
 
