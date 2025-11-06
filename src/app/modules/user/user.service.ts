@@ -17,6 +17,7 @@ import { Post } from '../post/post.model';
 import pick from '../../../shared/pick';
 import { IPaginationOptions } from '../../../types/pagination';
 import { paginationHelper } from '../../../helpers/paginationHelper';
+import dayjs from 'dayjs';
 
 const createUserToDB = async (
   payload: Partial<IUser>
@@ -81,6 +82,8 @@ const createUserToDB = async (
 
 const getUserProfileFromDB = async (user: JwtPayload): Promise<any> => {
   const { id } = user;
+  var now = dayjs("12-25-1995", "MM-DD-YYYY")
+  console.log( dayjs().startOf("day").toDate())
   // Only unselect the arrays but still need to count their lengths, so will fetch their counts
   const isExistUser = await User.findById(id, '-verified -role -token').lean();
   const userPosts = await Post.find({ creator: id }, '-creator -likes').lean();

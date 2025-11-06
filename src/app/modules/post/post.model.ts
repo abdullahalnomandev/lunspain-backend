@@ -12,6 +12,10 @@ const postSchema = new Schema<IPOST, IPostModel>(
       type: String,
       trim: true,
     },
+    media: {
+      type: String,
+      trim: true,
+    },
     creator: {
       type: Schema.Types.ObjectId,
       ref: 'User'
