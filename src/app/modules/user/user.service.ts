@@ -199,14 +199,14 @@ const updateSkypeProfileToDB = async (
 };
 
 const getAllUsers = async (query: Record<string, any>) => {
-  const result = new QueryBuilder(User.find(), query)
+  const userQuery = new QueryBuilder(User.find(), query)
     .paginate()
     .search(userSearchableField)
     .fields()
     .filter()
     .sort();
 
-  const data = await result.modelQuery
+  const result = await userQuery.modelQuery
     // .populate({
     //   path: "airlineVerification",
     //   match: { paymentStatus: "paid" },
@@ -218,11 +218,11 @@ const getAllUsers = async (query: Record<string, any>) => {
     // })
     .lean();
 
-  const pagination = await result.getPaginationInfo();
+  const pagination = await userQuery.getPaginationInfo();
 
   return {
     pagination,
-    data,
+    data: result,
   };
 };
 

@@ -2,7 +2,7 @@ import { Model, model, Schema, Types } from 'mongoose';
 
 export interface IUserCredit {
   user: Types.ObjectId;
-  clubId: string;
+  club: Types.ObjectId;
   credit: number;
 }
 
@@ -15,10 +15,10 @@ const userCreditSchema = new Schema<IUserCredit, UserCreditModel>(
       required: true,
       index: true,
     },
-    clubId: {
-      type: String,
+    club: {
+      type: Schema.Types.ObjectId,
+      ref: "Club",
       required: true,
-      index: true,
     },
     credit: {
       type: Number,
@@ -28,5 +28,7 @@ const userCreditSchema = new Schema<IUserCredit, UserCreditModel>(
   },
   { timestamps: true }
 );
+
+userCreditSchema.index({ user: 1, clubId: 1 }, { unique: true });
 
 export const UserCredit = model<IUserCredit, UserCreditModel>('UserCredit', userCreditSchema);
