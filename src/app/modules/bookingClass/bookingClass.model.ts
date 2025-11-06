@@ -16,6 +16,7 @@ const bookingClassSchema = new Schema<IBookingClass>(
         payment_method: { type: String, enum: Object.values(PAYMENT_METHOD) },
         attandence_status: { type: String, enum: Object.values(MEMBERS_STATUS), default: MEMBERS_STATUS.INITIAL, required: true },
         discount: { type: Number, default: 0 },
+        isQueued: { type: Boolean, default: false },
     },
     { timestamps: true }
 );

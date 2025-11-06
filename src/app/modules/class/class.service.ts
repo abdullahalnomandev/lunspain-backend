@@ -9,6 +9,7 @@ import utc from "dayjs/plugin/utc";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { Class } from './class.model';
 import { IUserCredit, UserCredit } from '../user/credit/user.credit.model';
+import { BookingClass } from '../bookingClass/bookingClass.model';
 
 dayjs.extend(utc);
 dayjs.extend(isoWeek);
@@ -22,6 +23,8 @@ type Occurrence = {
     start_time: string;
     const_per_ticket: number;
     max_number_of_attendees: number;
+    remaining_space?: number;
+    booking_status?: string;
 };
 
 type ClassCategories = {
@@ -205,7 +208,7 @@ const generateOccurrences = (cls: any): Occurrence[] => {
 };
 
 // Utility: categorize occurrences into today / thisWeek / nextWeek / nextMonth / nextYear
-const categorizeOccurrences = (occurrences: Occurrence[]): ClassCategories => {
+const categorizeOccurrences = async (occurrences: Occurrence[], userId: string): Promise<ClassCategories > => {
     const today = dayjs().startOf("day");
 
     const startOfThisWeek = today.startOf("isoWeek");
@@ -229,6 +232,39 @@ const categorizeOccurrences = (occurrences: Occurrence[]): ClassCategories => {
     };
 
     for (const occ of occurrences) {
+        const totalBooked = await BookingClass.countDocuments({
+            club: occ.club,
+            class: occ._id,
+            attandence_status: MEMBERS_STATUS.ATTEND,
+            class_booking_ref_id: `${occ.date_of_class.split('T')[0]}_${occ._id}`
+        });
+
+        // ✅ Correct remaining seat calculation
+        //@ts-ignore
+        occ.remaining_space = occ.max_number_of_attendees - totalBooked;
+        const isMyBooked = await BookingClass.exists({
+            club: occ.club,
+            user: userId,
+            class: occ._id,
+            attandence_status: MEMBERS_STATUS.ATTEND,
+            class_booking_ref_id: `${occ.date_of_class.split('T')[0]}_${occ._id}`
+        });
+
+        const isCanceled = await BookingClass.exists({
+            club: occ.club,
+            user: userId,
+            class: occ._id,
+            attandence_status: MEMBERS_STATUS.CANCEL,
+            class_booking_ref_id: `${occ.date_of_class.split('T')[0]}_${occ._id}`
+        });
+        if(isMyBooked){
+            occ.booking_status = 'attended';
+        }else if(isCanceled){
+            occ.booking_status = 'canceled';
+        }else{
+            occ.booking_status = totalBooked >= occ.max_number_of_attendees ? 'full' : 'available';
+        }
+
         const occDate = dayjs(occ.date_of_class);
 
         if (occDate.isSame(today, "day")) {
@@ -256,17 +292,31 @@ export const getClassesByClubId = async (clubId: string, userId: string): Promis
 
     const allOccurrences: Occurrence[] = [];
     for (const cls of classes) {
-        cls.book_status = 'cancel'
-        cls.remaining_spaces = 7;
-        const occurrences = generateOccurrences(cls);
+        const maxCapacity = cls.max_number_of_attendees;
+
+        // const totalBooked = await BookingClass.countDocuments({
+        //     club: clubId,
+        //     class: cls._id,
+        //     attandence_status: MEMBERS_STATUS.ATTEND,
+        //     class_booking_ref_id: `${dayjs(cls.date_of_class).format('YYYY-MM-DD')}_${cls._id}`
+        // });
+        // console.log({ class_booking_ref_id: `${dayjs(cls.date_of_class).format('YYYY-MM-DD')}_${cls._id}`})
+
+        // cls.book_status = 'cancel';
+
+        // // ✅ Correct remaining seat calculation
+        // cls.remaining_space = maxCapacity - totalBooked;
+
+        const occurrences = generateOccurrences({ ...cls }); // prevent mutation
         allOccurrences.push(...occurrences);
     }
 
-    const userCredit = await UserCredit.findOne({clubId,user:userId}).lean() || {credit:0};
+
+    const userCredit = await UserCredit.findOne({ clubId, user: userId }).lean() || { credit: 0 };
 
     return {
-        userCredit:userCredit.credit,
-        ...categorizeOccurrences(allOccurrences)
+        userCredit: userCredit.credit,
+        ...(await categorizeOccurrences(allOccurrences,userId))
     };
 };
 

@@ -2,6 +2,7 @@ import mongoose, { Model, Schema, Types } from 'mongoose';
 import { CLASS_ROLE, CLASS_STATUS, DAY_OF_WEEK, MEMBERS_STATUS, REPEAT_TYPE, REPEAT_UNTIL } from './class.constant';
 
 export type IClass = {
+  _id?: Types.ObjectId;
   club:mongoose.ObjectId
   creator:mongoose.ObjectId;
   class_status:CLASS_STATUS,

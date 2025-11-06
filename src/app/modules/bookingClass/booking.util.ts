@@ -1,5 +1,9 @@
+import { StatusCodes } from "http-status-codes";
+import ApiError from "../../../errors/ApiError";
 import { emailHelper } from "../../../helpers/emailHelper";
 import { emailTemplate } from "../../../shared/emailTemplate";
+import { Class } from "../class/class.model";
+import { MEMBERS_STATUS } from "./booking.constant";
 import { BookingClass } from "./bookingClass.model";
 
 // Generate Order ID
@@ -31,3 +35,4 @@ export const sendBookingConfirmEmail = (email: string) => {
     const welcomeEmailTemplate = emailTemplate.WelcomMessageForClassBooking(email);
     emailHelper.sendEmail(welcomeEmailTemplate);
 }
+

@@ -18,6 +18,10 @@ router
 router.get('/success', ClassController.orderSuccess);
 router.get('/success', ClassController.orderSuccess);
 
+router.get('/attandence-list/book/:class_booking_ref_id',
+    auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+    ClassController.getBookingAttendance);
+
 router.post('/cancel-attendence/:class_booking_ref_id',
     auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
     ClassController.cancelAttendence);

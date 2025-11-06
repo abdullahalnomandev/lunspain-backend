@@ -1,3 +1,6 @@
+import { IBookingClass } from '../app/modules/bookingClass/bookingClass.interface';
+import { IClass } from '../app/modules/class/class.interface';
+import config from '../config';
 import { ICreateAccount, IResetPassword } from '../types/emailTamplate';
 
 const createAccount = (values: ICreateAccount) => {
@@ -150,7 +153,7 @@ const WelcomMessageForClassBooking = (email: string) => {
 };
 
 
-const WelcomeMessageForWaitingList = (email: string) => {
+const WelcomeMessageForWaitingList = (email: string, waitingEntry: IBookingClass) => {
   return {
     to: email,
     subject: 'Welcome to Lunspain',
@@ -158,6 +161,10 @@ const WelcomeMessageForWaitingList = (email: string) => {
     <body>
     <h1>Welcome to Lunspain</h1>
     <p>You have been added to the waiting list for this class.</p>
+    <p>Name: ${waitingEntry.class}</p>
+    <p>Class Booking Ref ID: ${waitingEntry.class_booking_ref_id}</p>
+    <p>Booking ID: ${waitingEntry.booking_id}</p>
+    <p>Price of Class: ${waitingEntry.price_of_class}</p>
     </body>
   `,
   };
@@ -176,6 +183,56 @@ const WelcomeMessageForCancellation = (email: string) => {
   };
 };
 
+const WelcomeMessageForAcceptSpeceASQue = (email: string, classInfo: IClass, classBookingRefId: string, bookingId: string) => {
+  return {
+    to: email,
+    subject: `Spot available – confirm your class ${classInfo.class_name}`,
+    html: `
+<body style="margin:0;padding:0;min-height:100vh;width:100vw;font-family:'Inter',Arial,sans-serif;background:#f6f8fa;">
+  <div style="max-width:600px;margin:40px auto;padding:40px;background:#fff;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.1);">
+    <h1 style="color:#20274d;font-size:1.6rem;font-weight:700;margin-bottom:16px;">A spot just opened up!</h1>
+    <p style="color:#333;font-size:16px;line-height:1.6;margin-bottom:12px;">
+      Great news—someone cancelled and you’re next on the waiting list.
+    </p>
+
+    <table style="width:100%;border-collapse:collapse;margin:24px 0;">
+      <tr>
+        <td style="padding:8px 0;color:#555;font-weight:600;">Class:</td>
+        <td style="padding:8px 0;color:#222;">${classInfo.class_name}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#555;font-weight:600;">Start:</td>
+        <td style="padding:8px 0;color:#222;">${classInfo.start_time.toLocaleString()}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#555;font-weight:600;">Booking ref:</td>
+        <td style="padding:8px 0;color:#222;">${classBookingRefId}</td>
+      </tr>
+    </table>
+
+    <a href="${config.front_end_app_url}/accept-class?lassRef=${classBookingRefId}" 
+       style="display:inline-block;background:#277E16;color:#fff;text-decoration:none;font-size:16px;font-weight:600;padding:12px 28px;border-radius:6px;margin:20px 0;">
+      Accept my spot
+    </a>
+
+    <p style="color:#666;font-size:14px;margin-top:20px;">
+      If you don’t confirm within the next 6 hours we’ll offer the spot to the next person in line.
+    </p>
+
+    <hr style="border:none;border-top:1px solid #eee;margin:30px 0;">
+    <div style="text-align:center;color:#888;font-size:13px;">
+      You’re receiving this email because you joined the waiting list at Lunspain.
+    </div>
+    <div style="text-align:center;margin-top:10px;">
+      <a href="${config.front_end_app_url}/privacy" style="color:#888;text-decoration:none;margin:0 10px;">Privacy Policy</a> •
+      <a href="${config.front_end_app_url}/terms"   style="color:#888;text-decoration:none;margin:0 10px;">Terms</a>
+    </div>
+  </div>
+</body>
+`,
+  };
+}
+
 
 
 export const emailTemplate = {
@@ -188,4 +245,5 @@ export const emailTemplate = {
   WelcomMessageForClassBooking,
   WelcomeMessageForWaitingList,
   WelcomeMessageForCancellation,
+  WelcomeMessageForAcceptSpeceASQue
 };

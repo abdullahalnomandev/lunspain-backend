@@ -102,6 +102,21 @@ const cancelAttendence = catchAsync(
     }
 );
 
+const getBookingAttendance = catchAsync(
+    async (req: Request, res: Response, next: NextFunction) => {
+        const classBookingRefId = req.params.class_booking_ref_id;
+        const userId = req.user?.id;
+        const result = await BookingClassService.getBookingAttendance(userId, classBookingRefId);
+
+        sendResponse(res, {
+            success: true,
+            statusCode: StatusCodes.OK,
+            message: 'Booking attendance retrieved successfully',
+            data: result,
+        });
+    }
+);
+
 
 
 export const ClassController = {
@@ -111,5 +126,6 @@ export const ClassController = {
     orderCancel,
     addToWaitingList,
     getAllBookingAttendance,
-    cancelAttendence
+    cancelAttendence,
+    getBookingAttendance,
 };

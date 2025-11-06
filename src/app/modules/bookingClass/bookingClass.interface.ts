@@ -10,7 +10,8 @@ export type IBookingClass = {
     price_of_class: number;
     payment_status: PAYMENT_STATUS;
     payment_method: PAYMENT_METHOD;
-    attandence_status: MEMBERS_STATUS
+    attandence_status: MEMBERS_STATUS;
+    isQueued?: boolean;
     discount?: number;
     createdAt?: Date;
     updatedAt?: Date;
