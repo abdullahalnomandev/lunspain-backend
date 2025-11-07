@@ -1,10 +1,8 @@
 import express from 'express';
 import { USER_ROLES } from '../../../enums/user';
 import auth from '../../middlewares/auth';
-import validateRequest from '../../middlewares/validateRequest';
-import { ClubController } from './club.controller';
-import { ClubValidation } from './club.validation';
 import fileUploadHandler from '../../middlewares/fileUploadHandler';
+import { ClubController } from './club.controller';
 
 const router = express.Router();
 
@@ -26,25 +24,24 @@ router
     auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
     ClubController.getClubs
   );
-  
+
 router
   .route('/:id')
-  .get(ClubController.getSingleClub)
+  .get(
+    auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+    ClubController.getSingleClub
+  )
   .patch(
-    auth(USER_ROLES.ADMIN),
-    validateRequest(ClubValidation.updateClubZodSchema),
+    fileUploadHandler(),
+    auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
     ClubController.updateClub
   )
+
   .delete(auth(USER_ROLES.ADMIN), ClubController.deleteClub);
 
 router
   .route('/:clubId/members')
-  .post(
-    auth(USER_ROLES.ADMIN),
-    ClubController.addMemberToClub
-  );
-
-
+  .post(auth(USER_ROLES.ADMIN), ClubController.addMemberToClub);
 
 router
   .route('/:clubId/join')
@@ -57,8 +54,17 @@ router
   .route('/:clubId/members/:userId')
   .delete(auth(USER_ROLES.ADMIN), ClubController.removeMemberFromClub);
 
-router
-  .route('/creator/:creatorId')
-  .get(ClubController.getClubsByCreator);
+router.route('/creator/:creatorId').get(ClubController.getClubsByCreator);
+router.post(
+  '/leave-club/:clubId',
+  auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  ClubController.leaveClub
+);
+
+router.get(
+  '/is-last-member/:clubId',
+  auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  ClubController.isLastMember
+);
 
 export const ClubRoutes = router;

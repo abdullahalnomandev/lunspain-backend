@@ -1,11 +1,11 @@
 import { NextFunction, Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
+import { paginationFields } from '../../../constants/pagination';
 import catchAsync from '../../../shared/catchAsync';
 import { getSingleFilePath } from '../../../shared/getFilePath';
+import pick from '../../../shared/pick';
 import sendResponse from '../../../shared/sendResponse';
 import { UserService } from './user.service';
-import pick from '../../../shared/pick';
-import { paginationFields } from '../../../constants/pagination';
 
 const createUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -102,16 +102,17 @@ const updateSkypeProfile = catchAsync(async (req: Request, res: Response) => {
 });
 
 // Add followUser
-const followUser = catchAsync(async (req: Request, res: Response) => {
+const toggleFollowUser = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user?.id;
   const targetId = req.params.id;
 
-  await UserService.followUser(userId, targetId);
+  const result = await UserService.toggleFollowUser(userId, targetId);
 
   sendResponse(res, {
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'Successfully followed the user.',
+    message: result.message,
+    data: result.data,
   });
 });
 
@@ -149,12 +150,14 @@ const getUserProfileById = catchAsync(async (req: Request, res: Response) => {
 
 // Add getFollowerList
 const getFollowerList = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
   const requestUserId = req.params?.id;
 
   const patinationOptions = pick(req.query, paginationFields);
   const result = await UserService.getFollowerListFromDB(
     requestUserId,
-    patinationOptions
+    userId,
+    req.query
   );
 
   sendResponse(res, {
@@ -167,12 +170,13 @@ const getFollowerList = catchAsync(async (req: Request, res: Response) => {
 });
 // Add getFollowingList
 const getFollowingList = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
   const requestUserId = req.params?.id;
 
-  const patinationOptions = pick(req.query, paginationFields);
   const result = await UserService.getFollowingListFromDB(
     requestUserId,
-    patinationOptions
+    userId,
+    req.query
   );
 
   sendResponse(res, {
@@ -189,7 +193,7 @@ export const UserController = {
   getUserProfile,
   updateProfile,
   updateSkypeProfile,
-  followUser,
+  toggleFollowUser,
   unfollowUser,
   getAllUsers,
   getUserProfileById,

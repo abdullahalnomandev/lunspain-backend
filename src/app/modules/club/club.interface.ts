@@ -1,5 +1,5 @@
 import { Model, Schema } from 'mongoose';
-import { CLUB_ROLE } from './club.constant';
+import { CLUB_PERIOD_TYPE } from './club.constant';
 
 export type IClub = {
   name: string;
@@ -11,13 +11,19 @@ export type IClub = {
   country: string;
   post_code: string;
   club_specilaity: [string];
-  club_members: [
-    {
-      role: CLUB_ROLE.USER | CLUB_ROLE.CLUB_MANAGER;
-      user_id: Schema.Types.ObjectId;
-    }
-  ];
   image: string;
   cover_image: string;
+  notification_settings: Schema.Types.ObjectId;
+  // Club Settings
+  allow_waiting_list: boolean; // default: true
+  allow_class_cancelation: boolean; // default: true
+  pre_class_cancelation?: {
+    period: number;
+    period_type: CLUB_PERIOD_TYPE; // minute, hour, day
+  };
+  premium_feature: {
+    community_and_sharing: boolean; // default: true
+    booking_system: boolean; // default: true
+  };
 };
 export type ClubModel = Model<IClub, Record<string, unknown>>;

@@ -1,21 +1,25 @@
 import { StatusCodes } from 'http-status-codes';
-import ApiError from '../../../errors/ApiError';
-import { Comment } from './comment.model';
+import ApiError from '../../../../errors/ApiError';
+import QueryBuilder from '../../../builder/QueryBuilder';
+import { Post } from '../post.model';
 import { IComment } from './comment.interface';
+import { Comment } from './comment.model';
 
 // Create a new comment
 const createComment = async (payload: IComment) => {
-  
-
-    console.log(payload)
-  if (!payload.post) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'Post id is required');
+  console.log(payload);
+  const post = await Post.findById(payload.post);
+  if (!post) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Post id is not valid');
   }
   if (!payload.creator) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Comment creator is required');
   }
-  if (!payload.text) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'Comment text is required');
+  if (!payload.text && !payload.image) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      'Comment text or image is required'
+    );
   }
 
   const comment = await Comment.create(payload);
@@ -24,8 +28,8 @@ const createComment = async (payload: IComment) => {
 
 // Update a comment by ID
 const updateComment = async (
-  userId: string, 
-  commentId: string, 
+  userId: string,
+  commentId: string,
   payload: Partial<IComment>
 ) => {
   const comment = await Comment.findById(commentId);
@@ -34,14 +38,15 @@ const updateComment = async (
   }
 
   if (comment.creator.toString() !== userId) {
-    throw new ApiError(StatusCodes.FORBIDDEN, "You aren't the owner of this comment");
+    throw new ApiError(
+      StatusCodes.FORBIDDEN,
+      "You aren't the owner of this comment"
+    );
   }
 
-  const updatedComment = await Comment.findByIdAndUpdate(
-    commentId,
-    payload,
-    { new: true }
-  );
+  const updatedComment = await Comment.findByIdAndUpdate(commentId, payload, {
+    new: true,
+  });
 
   if (!updatedComment) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Comment not found');
@@ -67,9 +72,24 @@ const deleteComment = async (id: string) => {
   return deletedComment;
 };
 
-const getALlCommentsByPost = async (postId: string) => {
-  const comments = await Comment.find({ post: postId }).lean();
-  return comments;
+const getALlCommentsByPost = async (
+  postId: string,
+  query: Record<string, unknown>
+) => {
+  const userQuery = new QueryBuilder(Comment.find(), query)
+    .paginate()
+    // .search(userSearchableField)
+    .fields()
+    .filter()
+    .sort();
+
+  const result = await userQuery.modelQuery.populate('creator');
+
+  const pagination = await userQuery.getPaginationInfo();
+  return {
+    pagination,
+    data: result,
+  };
 };
 
 export const CommentService = {
@@ -77,5 +97,5 @@ export const CommentService = {
   updateComment,
   findById,
   deleteComment,
-  getALlCommentsByPost
+  getALlCommentsByPost,
 };

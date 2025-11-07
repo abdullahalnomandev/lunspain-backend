@@ -1,10 +1,9 @@
 import { model, Schema } from 'mongoose';
+import { CREATOR_TYPE, POST_TYPE } from './post.constant';
 import { IPOST, IPostModel } from './post.interface';
-import { COMMENT_REACTION, CREATOR_TYPE, POST_TYPE } from './post.constant';
 
 const postSchema = new Schema<IPOST, IPostModel>(
   {
-
     description: {
       type: String,
     },
@@ -18,7 +17,7 @@ const postSchema = new Schema<IPOST, IPostModel>(
     },
     creator: {
       type: Schema.Types.ObjectId,
-      ref: 'User'
+      ref: 'User',
     },
     creator_type: {
       type: String,
@@ -44,21 +43,6 @@ const postSchema = new Schema<IPOST, IPostModel>(
       enum: Object.values(POST_TYPE),
       required: true,
     },
-    likes: [
-      {
-        react_type: {
-          type: String,
-          enum: Object.values(COMMENT_REACTION), 
-          required: true,
-        },
-        user: {
-          type: Schema.Types.ObjectId,
-          ref: 'User',
-          required: true,
-        },
-        _id: false
-      },
-    ],
   },
   { timestamps: true }
 );

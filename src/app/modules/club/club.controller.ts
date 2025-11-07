@@ -1,13 +1,12 @@
 import { NextFunction, Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import catchAsync from '../../../shared/catchAsync';
+import { getSingleFilePath } from '../../../shared/getFilePath';
 import sendResponse from '../../../shared/sendResponse';
 import { ClubService } from './club.service';
-import { getSingleFilePath } from '../../../shared/getFilePath';
 
 const createClub = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-  
     const user = req.user;
     let image = getSingleFilePath(req.files, 'image');
     let cover_image = getSingleFilePath(req.files, 'cover_image');
@@ -24,25 +23,23 @@ const createClub = catchAsync(
       data.cover_image = cover_image;
     }
 
-    if (Array.isArray(data.club_members)) {
-      data.club_members = data.club_members.map((member: any) => {
-        try {
-          if (typeof member === 'string') {
-            const fixed = member
-              .replace(/'/g, '"')
-              .replace(/(\w+):/g, '"$1":'); 
-    
-            return JSON.parse(fixed);
-          }
-          return member;
-        } catch (e) {
-          console.error("Failed to parse club_member:", member, e);
-          return member;
-        }
-      });
-    }
-    
+    // if (Array.isArray(data.club_members)) {
+    //   data.club_members = data.club_members.map((member: any) => {
+    //     try {
+    //       if (typeof member === 'string') {
+    //         const fixed = member
+    //           .replace(/'/g, '"')
+    //           .replace(/(\w+):/g, '"$1":');
 
+    //         return JSON.parse(fixed);
+    //       }
+    //       return member;
+    //     } catch (e) {
+    //       console.error("Failed to parse club_member:", member, e);
+    //       return member;
+    //     }
+    //   });
+    // }
 
     const result = await ClubService.createClub(data);
 
@@ -57,20 +54,22 @@ const createClub = catchAsync(
 
 const getAllClubs = catchAsync(async (req: Request, res: Response) => {
   const query = req.query as Record<string, any>;
-  const result  = await ClubService.getAllClubs(req.user?.id, query);
+  const result = await ClubService.getAllClubs(req.user?.id, query);
 
   sendResponse(res, {
     success: true,
     statusCode: StatusCodes.OK,
     message: 'Clubs retrieved successfully',
-    pagination:result.pagination,
+    pagination: result.pagination,
     data: result.data,
   });
 });
 
 const getSingleClub = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const result = await ClubService.getSingleClub(id);
+  const userId = req.user?.id;
+
+  const result = await ClubService.getSingleClub(id, userId);
 
   sendResponse(res, {
     success: true,
@@ -82,9 +81,24 @@ const getSingleClub = catchAsync(async (req: Request, res: Response) => {
 
 const updateClub = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
+    const user = req.user;
+    let image = getSingleFilePath(req.files, 'image');
+    let cover_image = getSingleFilePath(req.files, 'cover_image');
+
+    const data: any = {
+      ...req.body,
+      club_creator: user?.id,
+    };
     const { id } = req.params;
-    const payload = req.body;
-    const result = await ClubService.updateClub(id, payload);
+
+    if (image && image !== 'undefined') {
+      data.image = image;
+    }
+    if (cover_image && cover_image !== 'undefined') {
+      data.cover_image = cover_image;
+    }
+
+    const result = await ClubService.updateClub(id, user?.id, data);
 
     sendResponse(res, {
       success: true,
@@ -146,17 +160,17 @@ const getClubsByCreator = catchAsync(async (req: Request, res: Response) => {
 
 const joinClub = catchAsync(async (req: Request, res: Response) => {
   const { clubId } = req.params;
-  const  userId  = req?.user?.id;
+  const userId = req?.user?.id;
 
   const result = await ClubService.joinClub(clubId, userId);
-  
+
   sendResponse(res, {
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'Successfully joined the club'
+    message: 'Successfully joined the club',
+    data: result,
   });
 });
-
 
 const getClubs = catchAsync(async (req: Request, res: Response) => {
   const userId = req?.user?.id;
@@ -170,6 +184,34 @@ const getClubs = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const leaveClub = catchAsync(async (req: Request, res: Response) => {
+  const { clubId } = req.params;
+  const userId = req?.user?.id;
+  const { feedback } = req.body;
+
+  const result = await ClubService.leaveClub(clubId, userId, feedback);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Successfully left the club',
+    data: result,
+  });
+});
+
+const isLastMember = catchAsync(async (req: Request, res: Response) => {
+  const { clubId } = req.params;
+  const userId = req?.user?.id;
+
+  const result = await ClubService.isLastMember(clubId, userId);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Check if last member successfully',
+    data: result,
+  });
+});
 
 export const ClubController = {
   createClub,
@@ -181,5 +223,7 @@ export const ClubController = {
   removeMemberFromClub,
   getClubsByCreator,
   joinClub,
-  getClubs
+  getClubs,
+  leaveClub,
+  isLastMember,
 };

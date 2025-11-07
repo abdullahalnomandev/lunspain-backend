@@ -1,6 +1,7 @@
 import { model, Schema } from 'mongoose';
+import { CLUB_PERIOD_TYPE } from './club.constant';
 import { ClubModel, IClub } from './club.interface';
-import { CLUB_ROLE } from './club.constant';
+import { ClubNotificationSettings } from './notificaiton_settings/notification_settings.model';
 
 const clubSchema = new Schema<IClub, ClubModel>(
   {
@@ -38,30 +39,62 @@ const clubSchema = new Schema<IClub, ClubModel>(
     club_specilaity: {
       type: [String],
       default: [],
+      trim: true,
     },
-    club_members: [
-      {
-        role: {
-          type: String,
-          enum: Object.values(CLUB_ROLE),
-          default: CLUB_ROLE.USER,
-        },
-        user_id: {
-          type: Schema.Types.ObjectId,
-          ref: 'User',
-          required: true,
-        },
-        _id: false
-      },
-    ],
     image: {
       type: String,
     },
     cover_image: {
       type: String,
     },
+    notification_settings: {
+      type: Schema.Types.ObjectId,
+      ref: 'ClubNotification',
+      default: null,
+    },
+    allow_waiting_list: {
+      type: Boolean,
+      default: true,
+    },
+    allow_class_cancelation: {
+      type: Boolean,
+      default: true,
+    },
+    pre_class_cancelation: {
+      period: {
+        type: Number,
+        default: 0,
+      },
+      period_type: {
+        type: String,
+        default: CLUB_PERIOD_TYPE.MINUTE,
+      },
+    },
+    premium_feature: {
+      community_and_sharing: {
+        type: Boolean,
+        default: true,
+      },
+      booking_system: {
+        type: Boolean,
+        default: true,
+      },
+    },
   },
   { timestamps: true }
 );
+
+// Pre-save hook must be BEFORE model compilation
+clubSchema.pre('save', async function (next) {
+  try {
+    if (!this.notification_settings) {
+      const createdSettings = await ClubNotificationSettings.create({});
+      this.notification_settings = createdSettings._id;
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
 export const Club = model<IClub>('Club', clubSchema);

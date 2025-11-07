@@ -1,6 +1,6 @@
 import { Model, Types } from 'mongoose';
-import { IUser } from '../user/user.interface';
-import { IPOST } from '../post/post.interface';
+import { IUser } from '../../user/user.interface';
+import { IPOST } from '../post.interface';
 import { COMMENT_REACTION } from './comment.constant';
 
 export type IComment = {

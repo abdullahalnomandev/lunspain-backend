@@ -1,4 +1,4 @@
-import express, { NextFunction, Request, Response } from 'express';
+import express from 'express';
 import { USER_ROLES } from '../../../enums/user';
 import auth from '../../middlewares/auth';
 import fileUploadHandler from '../../middlewares/fileUploadHandler';
@@ -19,11 +19,14 @@ router
 
 router
   .route('/profile/skip')
-  .post(auth(USER_ROLES.ADMIN, USER_ROLES.USER), UserController.updateSkypeProfile)
+  .post(
+    auth(USER_ROLES.ADMIN, USER_ROLES.USER),
+    UserController.updateSkypeProfile
+  );
 
 router
   .route('/')
-  .get(auth(USER_ROLES.ADMIN, USER_ROLES.USER) , UserController.getAllUsers)
+  .get(auth(USER_ROLES.ADMIN, USER_ROLES.USER), UserController.getAllUsers)
   .post(
     validateRequest(UserValidation.createUserZodSchema),
     UserController.createUser
@@ -31,23 +34,37 @@ router
 
 router
   .route('/profile/user/:id')
-  .get(auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN), UserController.getUserProfileById)
+  .get(
+    auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+    UserController.getUserProfileById
+  );
 
 router
-  .route('/follow/:id')
-  .post(auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN), UserController.followUser)
+  .route('/toggle/follow/:id')
+  .post(
+    auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+    UserController.toggleFollowUser
+  );
 
 router
   .route('/unfollow/:id')
-  .post(auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN), UserController.unfollowUser)
+  .post(
+    auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+    UserController.unfollowUser
+  );
 
 router
-   .route('/profile/follower-list/:id')
-   .get(auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN), UserController.getFollowerList)
+  .route('/profile/follower-list/:id')
+  .get(
+    auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+    UserController.getFollowerList
+  );
 
 router
-   .route('/profile/following-list/:id')
-   .get(auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN), UserController.getFollowingList)
-
+  .route('/profile/following-list/:id')
+  .get(
+    auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+    UserController.getFollowingList
+  );
 
 export const UserRoutes = router;

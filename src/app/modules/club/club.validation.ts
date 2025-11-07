@@ -1,11 +1,4 @@
 import { z } from 'zod';
-import { CLUB_ROLE } from './club.constant';
-
-// Validation for a single club member
-const clubMemberSchema = z.object({
-  user_Id: z.string({ required_error: 'Member user ID is required' }),
-  role: z.nativeEnum(CLUB_ROLE).optional().default(CLUB_ROLE.USER),
-});
 
 // Schema for creating a club
 const createClubZodSchema = z.object({
@@ -18,7 +11,6 @@ const createClubZodSchema = z.object({
   country: z.string().optional(),
   post_code: z.string().optional(),
   club_specilaity: z.array(z.string()).optional(),
-  club_members: z.array(clubMemberSchema).optional(),
   club_logo: z.string().url('Club logo must be a valid URL').optional(),
   club_image: z.string().url('Club image must be a valid URL').optional(),
 });
@@ -33,7 +25,6 @@ const updateClubZodSchema = z.object({
   country: z.string().optional(),
   post_code: z.string().optional(),
   club_specilaity: z.array(z.string()).optional(),
-  club_members: z.array(clubMemberSchema).optional(),
   club_logo: z.string().url('Club logo must be a valid URL').optional(),
   club_image: z.string().url('Club image must be a valid URL').optional(),
 });

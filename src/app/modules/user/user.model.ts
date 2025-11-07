@@ -13,7 +13,7 @@ const profile = {
   },
   username: {
     type: String,
-    trim: true
+    trim: true,
   },
   lastName: {
     type: String,
@@ -26,7 +26,7 @@ const profile = {
     type: String,
   },
   skills: {
-    type: [String]
+    type: [String],
   },
   year_of_exprience: {
     type: Number,
@@ -40,12 +40,6 @@ const profile = {
   },
   cover_image: {
     type: String,
-  },
-  followers: {
-    type: [{ type: Schema.Types.ObjectId, ref: 'User' }]
-  },
-  following: {
-    type: [{ type: Schema.Types.ObjectId, ref: 'User' }]
   },
 };
 
@@ -71,7 +65,8 @@ const userSchema = new Schema<IUser, UserModel>(
         validator: function (v: string) {
           return /[a-z]/.test(v) && /[A-Z]/.test(v) && /\d/.test(v);
         },
-        message: 'Password must include both lowercase and uppercase letters and at least one number',
+        message:
+          'Password must include both lowercase and uppercase letters and at least one number',
       },
     },
     google_id_token: {
@@ -136,10 +131,12 @@ userSchema.pre('save', async function (next) {
   // Hash password
   this.profile.username = this.profile?.username || this.email.split('@')[0];
   if (!this.password) return next();
-  this.password = await bcrypt.hash(this.password, Number(config.bcrypt_salt_rounds));
+  this.password = await bcrypt.hash(
+    this.password,
+    Number(config.bcrypt_salt_rounds)
+  );
 
   next();
 });
-
 
 export const User = model<IUser, UserModel>('User', userSchema);
