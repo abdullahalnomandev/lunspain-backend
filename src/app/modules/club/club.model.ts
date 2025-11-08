@@ -80,6 +80,15 @@ const clubSchema = new Schema<IClub, ClubModel>(
         default: true,
       },
     },
+    payment:{
+      currency_of_payment: {
+        type: String,
+      },
+      in_person_payment: {
+        type: Boolean,
+        default: true,
+      },
+    }
   },
   { timestamps: true }
 );
@@ -92,7 +101,7 @@ clubSchema.pre('save', async function (next) {
       this.notification_settings = createdSettings._id;
     }
     next();
-  } catch (err) {
+  } catch (err: any) {
     next(err);
   }
 });

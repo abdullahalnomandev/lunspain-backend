@@ -234,6 +234,33 @@ const WelcomeMessageForAcceptSpeceASQue = (email: string, classInfo: IClass, cla
 }
 
 
+const RequestToCloseClub = (email: string) => {
+  return {
+    to: email,
+    subject: 'Request to close club',
+    html: `
+    <body>
+    <h1>Request to close club</h1>
+    <p>You have requested to close your club. We will close your club after 48 hours if you do not provide marketing permission.</p>
+    </body>
+  `,
+  };
+}
+
+const AccountClosedNotificaiton = (email: string) => {
+  return {
+    to: email,
+    subject: 'Account closed',
+    html: `
+    <body>
+    <h1>Account closed</h1>
+    <p>Your account has been closed. If you have any questions, please contact us.</p>
+    </body>
+  `,
+  };
+}
+
+
 
 export const emailTemplate = {
   createAccount,
@@ -245,5 +272,7 @@ export const emailTemplate = {
   WelcomMessageForClassBooking,
   WelcomeMessageForWaitingList,
   WelcomeMessageForCancellation,
-  WelcomeMessageForAcceptSpeceASQue
+  WelcomeMessageForAcceptSpeceASQue,
+  RequestToCloseClub,
+  AccountClosedNotificaiton
 };

@@ -96,6 +96,36 @@ const getAllMyDrafts = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getALlTypeOfpost = catchAsync(async (req: Request, res: Response) => {
+  const { postType } = req.params;
+  const userId = req.user?.id;
+  const result = await PostService.getALlTypeOfpost(postType, userId,req.query);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Posts retrieved successfully',
+    pagination:result.pagination,
+    data: result.data
+  });
+});
+
+
+const getALlUserLikedPost = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  const result = await PostService.getALlUserLikedPost(userId,req.query);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Posts retrieved successfully',
+    pagination:result.pagination,
+    data: result.data
+  });
+});
+
+
+
 export const PostController = {
   createPost,
   getAllPosts,
@@ -103,4 +133,6 @@ export const PostController = {
   updatePost,
   deletePost,
   getAllMyDrafts,
+  getALlTypeOfpost,
+  getALlUserLikedPost
 };

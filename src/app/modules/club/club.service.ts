@@ -7,9 +7,14 @@ import { CLUB_ROLE, clubSearchableField } from './club.constant';
 import { IClub } from './club.interface';
 import { Club } from './club.model';
 import { ClubMember } from './club_members/club_members.model';
+import { IClubMember } from './club_members/club_members.interface';
+import { CloseClubRequest } from './privacy/close_club_request.model';
+import setCronJob from '../../../shared/setCronJob';
+import { CLOSING_STATUS } from './privacy/close_club_request.interface';
+import { ClubMemberLeave } from './club_members/club_member_leave.model';
 
 //Create a new club
-const createClub = async (payload: IClub) => {
+const createClub = async (payload: IClub & { club_members: string[] }) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -138,19 +143,28 @@ const getSingleClub = async (id: string, userId: string) => {
 const updateClub = async (
   club_id: string,
   userId: string,
-  payload: Partial<IClub>
+  payload: Partial<IClub & { club_members: string[] }>
 ) => {
   const club = await ClubMember.findOne({
     club: club_id,
     user: userId,
-  }).lean();
+  }).lean() as IClubMember;
+
+  const clubToUpdate = await Club.findById(club_id).lean();
 
   if (payload.allow_class_cancelation && payload.pre_class_cancelation) {
-    payload.pre_class_cancelation = JSON.parse(payload.pre_class_cancelation);
+    payload.pre_class_cancelation = JSON.parse(payload?.pre_class_cancelation as any);
+  }
+
+  if(payload.payment){
+    payload.payment = {
+      ...clubToUpdate?.payment,
+      ...JSON.parse(payload.payment as any),
+    }
   }
 
   if (payload.premium_feature) {
-    payload.premium_feature = JSON.parse(payload.premium_feature);
+    payload.premium_feature = JSON.parse(payload.premium_feature as any);
   }
 
   if (club.role !== CLUB_ROLE.CLUB_MANAGER)
@@ -221,8 +235,6 @@ const updateClub = async (
 // Delete a club by ID
 
 const deleteClub = async (id: string) => {
-  if (!Types.ObjectId.isValid(id)) throw new Error('Invalid club ID');
-
   const deletedClub = await Club.findByIdAndDelete(id);
   return deletedClub;
 };
@@ -233,7 +245,6 @@ const addMemberToClub = async (
   userId: string,
   role: string
 ) => {
-  if (!Types.ObjectId.isValid(clubId)) throw new Error('Invalid club ID');
 
   const updatedClub = await Club.findByIdAndUpdate(
     clubId,
@@ -248,8 +259,6 @@ const addMemberToClub = async (
 
 //Remove a member from a club
 const removeMemberFromClub = async (clubId: string, userId: string) => {
-  if (!Types.ObjectId.isValid(clubId)) throw new Error('Invalid club ID');
-
   const updatedClub = await Club.findByIdAndUpdate(
     clubId,
     { $pull: { club_members: { user_id: userId } } },
@@ -331,7 +340,11 @@ const leaveClub = async (clubId: string, userId: string, feedback: string) => {
   }
 
   await ClubMember.findByIdAndDelete(membership._id);
-  console.log(feedback);
+  await ClubMemberLeave.create({
+    club: clubId,
+    user: userId,
+    feedback,
+  });
 
   return { message: 'Successfully left the club' };
 };
@@ -366,6 +379,94 @@ const isLastMember = async (clubId: string, userId: string) => {
   };
 };
 
+
+// Create a close club request
+const createCloseClubRequest = async (
+  clubId: string,
+  userId: string,
+  marketing_permission: boolean,
+  feedback: string
+) => {
+
+  // Check if user is a member of the club
+  const isMember = await ClubMember.findOne({
+    club: clubId,
+    user: userId,
+    role: CLUB_ROLE.CLUB_MANAGER,
+  });
+
+  if (!isMember) {
+    throw new Error('You are not a manager of this club');
+  }
+
+  const existingRequest = await CloseClubRequest.findOne({
+    club: clubId,
+    requested_user: userId,
+  });
+
+  if (existingRequest) {
+    await CloseClubRequest.deleteOne({ _id: existingRequest._id });
+    return { message: 'Close club request removed' };
+  }
+
+  const closeClubRequest = await CloseClubRequest.create({
+    club: clubId,
+    requested_user: userId,
+    marketing_permission,
+    feedback,
+  });
+  const user = await User.findById(userId);
+
+
+  const requestEmail = emailTemplate.RequestToCloseClub(user?.email || '');
+  emailHelper.sendEmail(requestEmail);
+
+  // SET SCHEDULE TIGGER TO DELETE CLUB AFTER 48 HOURS IF NO MARKETING PERMISSION
+  setCronJob('0 0 */2 * *', async () => {
+
+    const existRequest = await CloseClubRequest.findOne({
+      club: clubId,
+      requested_user: userId,
+    });
+
+
+    if (existRequest && existRequest.closing_status === CLOSING_STATUS.PENDING) {
+
+      if (existRequest.marketing_permission) {
+        await ClubMember.deleteMany({ club: clubId, role: CLUB_ROLE.CLUB_MANAGER });
+      } else {
+        await Club.findByIdAndDelete(clubId);
+        await ClubMember.deleteMany({ club: clubId });
+      }
+
+      await CloseClubRequest.updateOne({ _id: existRequest._id }, { closing_status: CLOSING_STATUS.CLOSED });
+
+      const closeEmail = emailTemplate.AccountClosedNotificaiton(user?.email || '');
+      emailHelper.sendEmail(closeEmail);
+
+    }
+
+  });
+
+
+  return closeClubRequest;
+};
+
+
+// Get close club status
+const getClubCloseStatus = async (clubId: string, userId: string) => {
+  const closeRequest = await CloseClubRequest.findOne({
+    club: clubId,
+    requested_user: userId,
+  });
+
+
+
+  return { message: !!closeRequest ? 'Close request already exists' : 'No close request found', isRequestedToClose: !!closeRequest };
+};
+
+
+
 export const ClubService = {
   createClub,
   getAllClubs,
@@ -379,4 +480,6 @@ export const ClubService = {
   getClubs,
   leaveClub,
   isLastMember,
+  createCloseClubRequest,
+  getClubCloseStatus,
 };

@@ -67,4 +67,16 @@ router.get(
   ClubController.isLastMember
 );
 
+router.post(
+  '/close-club-request/:clubId',
+  auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  ClubController.createCloseClubRequest
+);
+
+router.get(
+  '/leave-club/status/:clubId',
+  auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  ClubController.getClubCloseStatus
+);
+
 export const ClubRoutes = router;

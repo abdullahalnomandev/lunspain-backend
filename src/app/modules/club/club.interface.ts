@@ -25,5 +25,9 @@ export type IClub = {
     community_and_sharing: boolean; // default: true
     booking_system: boolean; // default: true
   };
+  payment:{
+    currency_of_payment: string;
+    in_person_payment: boolean;
+  }
 };
 export type ClubModel = Model<IClub, Record<string, unknown>>;

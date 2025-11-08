@@ -213,6 +213,37 @@ const isLastMember = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const createCloseClubRequest = catchAsync(async (req: Request, res: Response) => {
+  const { clubId } = req.params;
+  const userId = req?.user?.id;
+  const { marketing_permission, feedback } = req.body;
+
+  const result = await ClubService.createCloseClubRequest(clubId, userId, marketing_permission, feedback);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Close club request created successfully',
+    data: result,
+  });
+});
+
+const getClubCloseStatus = catchAsync(async (req: Request, res: Response) => {
+  const { clubId } = req.params;
+  const userId = req?.user?.id;
+
+  const result = await ClubService.getClubCloseStatus(clubId, userId);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Close club status retrieved successfully',
+    data: result,
+  });
+});
+
+
+
 export const ClubController = {
   createClub,
   getAllClubs,
@@ -226,4 +257,6 @@ export const ClubController = {
   getClubs,
   leaveClub,
   isLastMember,
+  createCloseClubRequest,
+  getClubCloseStatus
 };

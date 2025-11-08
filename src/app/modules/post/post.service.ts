@@ -7,13 +7,21 @@ import { ClubMember } from '../club/club_members/club_members.model';
 import { Comment } from './comment/comment.model';
 import { Like } from './like';
 import {
+  clubSearchableField,
   CREATOR_TYPE,
   MAX_FEATURES_SKILLS,
   MAX_TAGGED_USERS,
+  POST_SERCH_TYPE,
   POST_TYPE,
+  postSearchableField,
+  userSearchableField,
 } from './post.constant';
 import { IPOST } from './post.interface';
 import { Post } from './post.model';
+import { User } from '../user/user.model';
+import dayjs from 'dayjs';
+import isToday from 'dayjs/plugin/isToday';
+import isYesterday from 'dayjs/plugin/isYesterday';
 
 //Create a new club
 const createPost = async (payload: IPOST) => {
@@ -80,11 +88,11 @@ const updatePost = async (id: string, payload: Partial<IPOST>) => {
 
   if (payload.creator_type === CREATOR_TYPE.CLUB && payload.club) {
     const club = await Club.findById(payload.club).lean();
-
-    // Check if creator is a member of the club
-    const isMember = club?.club_members?.some(
-      (mem: any) => mem.user_Id?.toString() === payload.creator?.toString()
-    );
+    const isMember = await ClubMember.findOne({
+      club: club?._id,
+      user: payload.creator,
+      role: CLUB_ROLE.CLUB_MANAGER,
+    }).lean();
 
     if (!isMember) {
       throw new ApiError(
@@ -114,7 +122,7 @@ const updatePost = async (id: string, payload: Partial<IPOST>) => {
   if (!isEditable) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Post not found');
   }
-  const createdAt = new Date(isEditable.createdAt).getTime();
+  const createdAt = new Date(isEditable?.createdAt || '').getTime();
   const now = Date.now();
   const thirtyMinutes = 30 * 60 * 1000;
   if (now - createdAt > thirtyMinutes) {
@@ -152,7 +160,7 @@ const deletePost = async (userId: string, postId: string) => {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Post not found');
   }
   if (
-    post.creator.toString() !== userId &&
+    post?.creator?.toString() !== userId &&
     post.creator_type === CREATOR_TYPE.USER
   ) {
     throw new ApiError(
@@ -240,6 +248,125 @@ const getAllPosts = async (query: Record<string, any>, userId: string) => {
   };
 };
 
+
+const getALlTypeOfpost = async (
+  postType: string,
+  userId: string,
+  query: Record<string, any>
+) => {
+
+  let buildQuery: any;
+  let searchableField: string[];
+
+  switch (postType) {
+    case POST_SERCH_TYPE.PHOTO:
+      buildQuery = Post.find({ post_type: POST_TYPE.PHOTO });
+      searchableField = postSearchableField;
+      break;
+    case POST_SERCH_TYPE.CLUB:
+
+      buildQuery = Club.find();
+      searchableField = clubSearchableField;
+      break;
+    case POST_SERCH_TYPE.USER:
+      buildQuery = User.find();
+      searchableField = userSearchableField;
+      break;
+    case POST_SERCH_TYPE.VIDEO:
+      buildQuery = Post.find({ post_type: POST_TYPE.VIDEO });
+      searchableField = postSearchableField;
+      break;
+    default:
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        `Invalid post type. Provide (${POST_SERCH_TYPE.PHOTO} or ${POST_SERCH_TYPE.CLUB} or ${POST_SERCH_TYPE.USER} or ${POST_SERCH_TYPE.VIDEO} ) `
+      );
+  }
+
+
+
+  const postQueryBuilder = new QueryBuilder(buildQuery, query)
+    .paginate()
+    .search(searchableField)
+    .fields()
+    .filter()
+    .sort();
+
+  let posts = await postQueryBuilder.modelQuery;
+
+  if (postType === POST_SERCH_TYPE.CLUB) {
+    posts = await Promise.all(
+      posts.map(async (club: any) => {
+        const memberCount = await ClubMember.countDocuments({
+          club: club._id,
+        });
+        return { ...club.toObject(), club_members: memberCount };
+      })
+    );
+  }
+
+  const pagination = await postQueryBuilder.getPaginationInfo();
+
+  return {
+    pagination,
+    data: posts,
+  };
+};
+
+
+dayjs.extend(isToday);
+dayjs.extend(isYesterday);
+
+const getALlUserLikedPost = async (
+  userId: string,
+  query: Record<string, any>
+) => {
+  const userQuery = new QueryBuilder(
+    Like.find({ user: userId }),
+    query
+  )
+    .paginate()
+    .fields()
+    .filter()
+    .sort();
+
+  const result = await userQuery.modelQuery.populate('post');
+
+  const grouped: Record<string, any[]> = {
+    today: [],
+    yesterday: [],
+    two_days_ago: [],
+    this_week: [],
+    this_month: [],
+    this_year: [],
+    after_this_year: [],
+  };
+
+  result.forEach((like: any) => {
+    const createdAt = dayjs(like.createdAt);
+    let key: string | null = null;
+
+    if (createdAt.isToday()) key = 'today';
+    else if (createdAt.isYesterday()) key = 'yesterday';
+    else if (createdAt.isAfter(dayjs().subtract(2, 'day'))) key = 'two_days_ago';
+    else if (createdAt.isAfter(dayjs().subtract(7, 'day'))) key = 'this_week';
+    else if (createdAt.isAfter(dayjs().startOf('month'))) key = 'this_month';
+    else if (createdAt.isAfter(dayjs().startOf('year'))) key = 'this_year';
+    else {
+      grouped.after_this_year.push(like);
+      return;
+    }
+
+    if (key) grouped[key].push(like);
+  });
+
+  const pagination = await userQuery.getPaginationInfo();
+
+  return {
+    pagination,
+    data: grouped,
+  };
+};
 export const PostService = {
   createPost,
   getAllMyDrafts,
@@ -247,4 +374,6 @@ export const PostService = {
   deletePost,
   findById,
   getAllPosts,
+  getALlTypeOfpost,
+  getALlUserLikedPost
 };
