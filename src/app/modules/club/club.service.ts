@@ -12,6 +12,7 @@ import { CloseClubRequest } from './privacy/close_club_request.model';
 import setCronJob from '../../../shared/setCronJob';
 import { CLOSING_STATUS } from './privacy/close_club_request.interface';
 import { ClubMemberLeave } from './club_members/club_member_leave.model';
+import { ClubNotificationSettings } from './notificaiton_settings/notification_settings.model';
 
 //Create a new club
 const createClub = async (payload: IClub & { club_members: string[] }) => {
@@ -467,6 +468,16 @@ const getClubCloseStatus = async (clubId: string, userId: string) => {
 
 
 
+const getNotificationSettings = async (clubId: string, userId: string) => {
+  const club = await Club.findById(clubId).lean()
+  if (!club) throw new Error('Club not found');
+
+  // Populate the ClubNotificationSettings document referenced in the club
+  const notificationSettings = await ClubNotificationSettings.findById(club.notification_settings).lean()
+
+  return { message: 'Notification settings retrieved successfully', data: notificationSettings };
+};
+
 export const ClubService = {
   createClub,
   getAllClubs,
@@ -482,4 +493,5 @@ export const ClubService = {
   isLastMember,
   createCloseClubRequest,
   getClubCloseStatus,
+  getNotificationSettings
 };

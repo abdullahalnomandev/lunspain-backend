@@ -21,6 +21,6 @@ const bookingClassSchema = new Schema<IBookingClass>(
     { timestamps: true }
 );
 
-bookingClassSchema.index({ user: 1, club: 1 }, { unique: true });
+// bookingClassSchema.index({ user: 1, club: 1, class_booking_ref_id:1 }, { unique: true });
 
 export const BookingClass = mongoose.model<IBookingClass, BookingClassModel>('BookingClass', bookingClassSchema);

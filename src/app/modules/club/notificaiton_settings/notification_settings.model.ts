@@ -53,7 +53,4 @@ export const clubNotificationSettingsSchema = new Schema<
   },
 });
 
-export const ClubNotificationSettings = model<
-  IClubNotificationSettings,
-  ClubNotificationSettingsModel
->('ClubNotificationSettings', clubNotificationSettingsSchema);
+export const ClubNotificationSettings = model<IClubNotificationSettings>('ClubNotificationSettings', clubNotificationSettingsSchema);

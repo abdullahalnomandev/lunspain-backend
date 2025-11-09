@@ -14,7 +14,7 @@ import { sendBookingConfirmEmail } from './booking.util';
 // import { RoyalMailOrderService } from './royalmail/order.roymail.service';
 
 
-export const bookClass = async (payload: IBookingClass,origin: string) => {
+export const bookClass = async (payload: IBookingClass, origin: string) => {
 
     payload.attandence_status = MEMBERS_STATUS.INITIAL;
 
@@ -27,7 +27,7 @@ export const bookClass = async (payload: IBookingClass,origin: string) => {
 
         // Step 1: Create booking record (no transaction)
         payload.payment_status = PAYMENT_STATUS.PENDING;
-         const create_booking = await BookingClass.create(payload);
+        const create_booking = await BookingClass.create(payload);
 
         const vatRate = 0.45; // transaction charge ($0.45)
         const baseAmount = classInfo?.const_per_ticket || 0;
@@ -60,6 +60,12 @@ export const bookClass = async (payload: IBookingClass,origin: string) => {
                 bookingId: payload.booking_id.toString(),
                 customerId: userInfo._id.toString(),
             },
+            // payment_intent_data: {
+            //     application_fee_amount: Math.round(finalAmount * 0.1 * 100), // 10% fee
+            //     transfer_data: {
+            //         destination: 'ar3e3', // must be acct_xxx
+            //     },
+            // },
             success_url: `${origin}/api/v1/book-class-attandence/success?status=success&bookingId=${create_booking.booking_id}`,
             cancel_url: `${origin}/api/v1/book-class-attandence/cancel?status=cancel&bookingId=${create_booking.booking_id}`,
         });
@@ -77,23 +83,23 @@ export const bookClass = async (payload: IBookingClass,origin: string) => {
 };
 
 
-const bookConfirm = async (bookingId:string,status:string,res:Response) => {
+const bookConfirm = async (bookingId: string, status: string, res: Response) => {
     if (status === 'success') {
-        const order = await BookingClass.findOneAndUpdate({booking_id:bookingId}, { payment_status: PAYMENT_STATUS.PAID, attandence_status: MEMBERS_STATUS.ATTEND });
+        const order = await BookingClass.findOneAndUpdate({ booking_id: bookingId }, { payment_status: PAYMENT_STATUS.PAID, attandence_status: MEMBERS_STATUS.ATTEND });
         const user = await User.findById(order?.user).lean();
         if (order?.booking_id) {
             sendBookingConfirmEmail(user?.email as string);
         }
 
-        if(order){
+        if (order) {
             res.redirect(`${config.front_end_app_url}/booking-success`);
         }
     }
 };
 
-const bookCancel = async (bookingId:string,status:string,res:Response) => {
+const bookCancel = async (bookingId: string, status: string, res: Response) => {
     if (status === 'cancel') {
-        const order = await BookingClass.findOneAndDelete({booking_id:bookingId});
+        const order = await BookingClass.findOneAndDelete({ booking_id: bookingId });
         if (order) {
             res.redirect(`${config.front_end_app_url}/booking-cancel`);
         }

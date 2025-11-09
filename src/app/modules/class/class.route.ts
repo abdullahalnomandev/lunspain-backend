@@ -20,5 +20,12 @@ router
         ClassController.getClassesByClubId
     )
 
+    router
+    .route('/class-schedule-details/:class_id/:class_start_date')
+    .get(
+        auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+        ClassController.getClassSchedule
+    )
+
 
 export const ClassRoutes = router;

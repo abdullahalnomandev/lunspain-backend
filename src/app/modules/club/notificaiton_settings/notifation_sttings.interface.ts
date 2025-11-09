@@ -1,5 +1,5 @@
 import { Model } from 'mongoose';
-import { NOTIFICAITON_TOGGLE } from './notification_settings.constant';
+import { NOTIFICAITON_TOGGLE,NOTIFICATION_OPTION } from './notification_settings.constant';
 
 export type IClubNotificationSettings = {
   likes_on_your_posts: NOTIFICATION_OPTION;

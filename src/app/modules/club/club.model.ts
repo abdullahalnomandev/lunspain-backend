@@ -80,9 +80,10 @@ const clubSchema = new Schema<IClub, ClubModel>(
         default: true,
       },
     },
-    payment:{
+    payment: {
       currency_of_payment: {
         type: String,
+        default: "usd"
       },
       in_person_payment: {
         type: Boolean,

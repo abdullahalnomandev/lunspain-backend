@@ -10,6 +10,10 @@ import isoWeek from "dayjs/plugin/isoWeek";
 import { Class } from './class.model';
 import { IUserCredit, UserCredit } from '../user/credit/user.credit.model';
 import { BookingClass } from '../bookingClass/bookingClass.model';
+import { ClubMember } from '../club/club_members/club_members.model';
+import { CLUB_ROLE } from '../club/club.constant';
+import ApiError from '../../../errors/ApiError';
+import { StatusCodes } from 'http-status-codes';
 
 dayjs.extend(utc);
 dayjs.extend(isoWeek);
@@ -37,9 +41,19 @@ type ClassCategories = {
 // Create a new class
 const createClass = async (payload: IClass) => {
 
+    console.log(payload)
     const isClubExist = await Club.findById(payload.club).lean('_id');
     if (!isClubExist) {
         throw new Error('Club id not correct!');
+    }
+
+    const isMemberOfClass = await ClubMember.findOne({
+        user: payload.creator,
+        club: payload.club,
+        role: CLUB_ROLE.CLUB_MANAGER
+    });
+    if (!isMemberOfClass) {
+        throw new Error('Creator is not a member of the club');
     }
 
     // CLEAR AND VALIDAITON REOCCORING CLASS
@@ -57,8 +71,9 @@ const createClass = async (payload: IClass) => {
         delete payload.reoccurring_class.repeat_untilDate
     }
 
-    if (repeat_until === REPEAT_UNTIL.UNTIL_DATE && !repeat_untilDate) throw new Error('Repeat until Date is require');
-    else delete payload.reoccurring_class.total_occurrences
+    if (repeat_until === REPEAT_UNTIL.UNTIL_DATE && !repeat_untilDate) {
+        throw new Error('Repeat until Date is require');
+    }
 
     // FOR WEEK
     if (repeat === REPEAT_TYPE.WEEKLY && !repeat_days_of_week) throw new Error('Repeat day of week is require');
@@ -208,7 +223,7 @@ const generateOccurrences = (cls: any): Occurrence[] => {
 };
 
 // Utility: categorize occurrences into today / thisWeek / nextWeek / nextMonth / nextYear
-const categorizeOccurrences = async (occurrences: Occurrence[], userId: string): Promise<ClassCategories > => {
+const categorizeOccurrences = async (occurrences: Occurrence[], userId: string): Promise<ClassCategories> => {
     const today = dayjs().startOf("day");
 
     const startOfThisWeek = today.startOf("isoWeek");
@@ -257,11 +272,11 @@ const categorizeOccurrences = async (occurrences: Occurrence[], userId: string):
             attandence_status: MEMBERS_STATUS.CANCEL,
             class_booking_ref_id: `${occ.date_of_class.split('T')[0]}_${occ._id}`
         });
-        if(isMyBooked){
+        if (isMyBooked) {
             occ.booking_status = 'attended';
-        }else if(isCanceled){
+        } else if (isCanceled) {
             occ.booking_status = 'canceled';
-        }else{
+        } else {
             occ.booking_status = totalBooked >= occ.max_number_of_attendees ? 'full' : 'available';
         }
 
@@ -292,22 +307,7 @@ export const getClassesByClubId = async (clubId: string, userId: string): Promis
 
     const allOccurrences: Occurrence[] = [];
     for (const cls of classes) {
-        const maxCapacity = cls.max_number_of_attendees;
-
-        // const totalBooked = await BookingClass.countDocuments({
-        //     club: clubId,
-        //     class: cls._id,
-        //     attandence_status: MEMBERS_STATUS.ATTEND,
-        //     class_booking_ref_id: `${dayjs(cls.date_of_class).format('YYYY-MM-DD')}_${cls._id}`
-        // });
-        // console.log({ class_booking_ref_id: `${dayjs(cls.date_of_class).format('YYYY-MM-DD')}_${cls._id}`})
-
-        // cls.book_status = 'cancel';
-
-        // // ✅ Correct remaining seat calculation
-        // cls.remaining_space = maxCapacity - totalBooked;
-
-        const occurrences = generateOccurrences({ ...cls }); // prevent mutation
+        const occurrences = generateOccurrences(cls); // prevent mutation
         allOccurrences.push(...occurrences);
     }
 
@@ -316,14 +316,99 @@ export const getClassesByClubId = async (clubId: string, userId: string): Promis
 
     return {
         userCredit: userCredit.credit,
-        ...(await categorizeOccurrences(allOccurrences,userId))
+        ...(await categorizeOccurrences(allOccurrences, userId))
     };
+};
+
+
+export const getClassSchedule = async (
+    user_id: string,
+    class_id: string,
+    class_start_date: string
+): Promise<any> => {
+    // 🟢 Fetch class and club info together efficiently
+    const existClass = await Class.findById(class_id)
+        .populate({
+            path: 'club',
+            select: '_id allow_waiting_list allow_class_cancelation payment',
+        })
+        .lean();
+
+    if (!existClass) {
+        throw new ApiError(StatusCodes.NOT_FOUND, 'Class not found');
+    }
+
+
+    const bookingRefId = `${class_start_date.split('T')[0]}_${existClass._id}`;
+
+    // 🟢 Run these 3 in parallel to reduce I/O waits
+    const [creditDoc, allBookings, myBookings] = await Promise.all([
+        UserCredit.findOne({ club: existClass.club._id, user: user_id })
+            .select('credit')
+            .lean(),
+        BookingClass.find({
+            class: existClass._id,
+            class_booking_ref_id: bookingRefId,
+        })
+            .select('attandence_status user')
+            .lean(),
+        BookingClass.find({
+            class: existClass._id,
+            user: user_id,
+            class_booking_ref_id: bookingRefId,
+        })
+            .select('attandence_status')
+            .lean(),
+    ]);
+
+    // 🟢 Aggregate counts in-memory instead of multiple DB calls
+    const attendanceSummary = {
+        attend: allBookings.filter(b => b.attandence_status === MEMBERS_STATUS.ATTEND).length,
+        wait: allBookings.filter(b => b.attandence_status === MEMBERS_STATUS.WAIT).length,
+        cancel: allBookings.filter(b => b.attandence_status === MEMBERS_STATUS.CANCEL).length,
+    };
+
+    const totalBooked = attendanceSummary.attend;
+
+    // 🟢 Check if user is a manager (class member)
+    const isManager = Array.isArray(existClass.class_members)
+        ? existClass.class_members.some(
+            (member: any) => member.user?.toString() === user_id.toString()
+        )
+        : false;
+
+    const classData: any = {
+        ...existClass,
+        allow_waiting_list: existClass.club?.allow_waiting_list || false,
+        allow_class_cancelation: existClass.club?.allow_class_cancelation || false,
+        total_user_credit: creditDoc?.credit || 0,
+        in_person_payment: existClass.club?.payment?.in_person_payment || false,
+        remaining_space: existClass.max_number_of_attendees - totalBooked,
+        attendance_summary: attendanceSummary,
+        is_manager: isManager,
+
+    };
+
+    // 🟢 Determine user's booking status (from myBookings)
+    const myStatus = myBookings[0]?.attandence_status;
+    if (myStatus === MEMBERS_STATUS.ATTEND) {
+        classData.booking_status = 'attended';
+    } else if (myStatus === MEMBERS_STATUS.CANCEL) {
+        classData.booking_status = 'canceled';
+    } else {
+        classData.booking_status =
+            totalBooked >= existClass.max_number_of_attendees ? 'full' : 'available';
+    }
+
+
+    return classData;
 };
 
 
 export const ClassService = {
     createClass,
-    getClassesByClubId
+    getClassesByClubId,
+    getClassSchedule
 };
 
 //     reoccurring_class: {

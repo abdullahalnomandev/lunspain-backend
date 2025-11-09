@@ -243,6 +243,21 @@ const getClubCloseStatus = catchAsync(async (req: Request, res: Response) => {
 });
 
 
+const getNotificationSettings = catchAsync(async (req: Request, res: Response) => {
+  const { clubId } = req.params;
+  const userId = req?.user?.id;
+
+  const result = await ClubService.getNotificationSettings(clubId, userId);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Notification settings updated successfully',
+    data: result,
+  });
+});
+
+
 
 export const ClubController = {
   createClub,
@@ -258,5 +273,6 @@ export const ClubController = {
   leaveClub,
   isLastMember,
   createCloseClubRequest,
-  getClubCloseStatus
+  getClubCloseStatus,
+  getNotificationSettings
 };

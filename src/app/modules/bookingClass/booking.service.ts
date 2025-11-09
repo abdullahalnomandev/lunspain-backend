@@ -15,6 +15,7 @@ import QueryBuilder from '../../builder/QueryBuilder';
 import setCronJob from '../../../shared/setCronJob';
 import cron from 'node-cron';
 import { IClass } from '../class/class.interface';
+import { ClubMember } from '../club/club_members/club_members.model';
 
 // Create a new booking class
 const createBookingClass = async (payload: Partial<IBookingClass & { date_of_class: string }>, origin: string): Promise<IBookingClass | { redirectStripeUrl: string }> => {
@@ -46,9 +47,8 @@ const createBookingClass = async (payload: Partial<IBookingClass & { date_of_cla
   // ---------------------------
   // 2. Check if user is a club member
   // ---------------------------
-  const isMember = clubExists.club_members.some(
-    (member) => member.user_id?.toString() === user?.toString()
-  );
+  const isMember = await ClubMember.findOne({ club: club, user: user }).lean();
+  console.log({ isMember })
 
   if (!isMember) {
     throw new ApiError(
@@ -57,13 +57,17 @@ const createBookingClass = async (payload: Partial<IBookingClass & { date_of_cla
     );
   }
 
+  if (payload.payment_method === PAYMENT_METHOD.PAY_IN_PERSON && !clubExists?.payment?.in_person_payment) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'In person payment is not enabled for this club');
+  }
+
   // ---------------------------
   // 3. Check existing booking
   // ---------------------------
-  const isAlreadyBooked = await BookingClass.findOne({ user, club, class: classId });
-   if(isAlreadyBooked?.attandence_status === MEMBERS_STATUS.CANCEL || isAlreadyBooked?.attandence_status === MEMBERS_STATUS.WAIT) {
-     await BookingClass.deleteOne({_id: isAlreadyBooked._id});
-   }
+  const isAlreadyBooked = await BookingClass.findOne({ user, club, class: classId,class_booking_ref_id:`${date_of_class.split('T')[0]}_${classExists._id}` });
+  if (isAlreadyBooked?.attandence_status === MEMBERS_STATUS.CANCEL || isAlreadyBooked?.attandence_status === MEMBERS_STATUS.WAIT) {
+    await BookingClass.deleteOne({ _id: isAlreadyBooked._id }, { new: true });
+  }
   if (isAlreadyBooked?.attandence_status === MEMBERS_STATUS.ATTEND) {
     throw new ApiError(StatusCodes.BAD_REQUEST, `Class already booked as ${isAlreadyBooked.attandence_status}`);
   }
@@ -115,7 +119,7 @@ const createBookingClass = async (payload: Partial<IBookingClass & { date_of_cla
   // 6. Payment method: STRIPE
   // ---------------------------
   if (payment_method === PAYMENT_METHOD.STRIPE) {
-    const createOrder = await BookingClassCardService.bookClass(payload as IBookingClass, origin);
+    const createOrder = await BookingClassCardService.bookClass(payload as IBookingClass, origin );
     return createOrder;
   }
 
@@ -124,31 +128,6 @@ const createBookingClass = async (payload: Partial<IBookingClass & { date_of_cla
 
 
 // Get all booking classes for a specific club
-const getBookingClassesByClubId = async (clubId: string, userId: string) => {
-  // Validate club exists
-  const club = await Club.findById(clubId);
-  if (!club) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Club not found');
-  }
-
-  // Ensure requesting user is a member of the club
-  const isMember = club.club_members.some(
-    (member) => member.user_id.toString() === userId
-  );
-  if (!isMember) {
-    throw new ApiError(
-      StatusCodes.FORBIDDEN,
-      'User must be a member of the club to view booking classes'
-    );
-  }
-
-  const bookingClasses = await BookingClass.find({ club: clubId })
-    .populate('user', 'name email')
-    .populate('club', 'name')
-    .lean();
-
-  return bookingClasses;
-};
 
 // Add user to waiting list
 const addToWaitingList = async (
@@ -173,15 +152,19 @@ const addToWaitingList = async (
   /* ------------------------------------------------------------------ */
   /* 2. Ensure user is a club member                                    */
   /* ------------------------------------------------------------------ */
-  const isMember = clubExists.club_members.some(
-    (m) => m.user_id?.toString() === user?.toString()
-  );
+  const isMember = await ClubMember.findOne({club:clubExists._id,user:userExists?._id})
   if (!isMember)
     throw new ApiError(
       StatusCodes.FORBIDDEN,
       'User must be a member of the club to book a class'
     );
 
+  if (!clubExists.allow_waiting_list) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      'Class waiting list is not allowed for this club'
+    );
+  }
   /* ------------------------------------------------------------------ */
   /* 3. Check if user already has any booking for this slot             */
   /* ------------------------------------------------------------------ */
@@ -262,6 +245,7 @@ const getAllBookingAttendance = async (userId: string, clubId: string, classId: 
       club: clubId,
       class: classId,
       class_booking_ref_id: `${classStartTime}_${classId}`,
+      attandence_status: { $ne: MEMBERS_STATUS.INITIAL }
     }),
     query
   ).paginate()
@@ -417,10 +401,7 @@ const cancelAttendence = async (userId: string, classBookingRefId: string) => {
 
 
 const getBookingAttendance = async (userId: string, classBookingRefId: string) => {
-  const bookingAttendance = await BookingClass.findOne({
-    user: userId,
-    class_booking_ref_id: classBookingRefId,
-  }).lean().populate<{ class: IClass }>('class');
+  const bookingAttendance = await BookingClass.findById(classBookingRefId).lean().populate<{ class: IClass }>('class');
 
   if (!bookingAttendance) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Booking attendance not found');
@@ -457,7 +438,6 @@ const getBookingAttendance = async (userId: string, classBookingRefId: string) =
 
 export const BookingClassService = {
   createBookingClass,
-  getBookingClassesByClubId,
   addToWaitingList,
   getAllBookingAttendance,
   cancelAttendence,

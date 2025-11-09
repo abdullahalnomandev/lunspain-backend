@@ -36,8 +36,24 @@ const getClassesByClubId = catchAsync(
 );
 
 
+const getClassSchedule = catchAsync(
+    async (req: Request, res: Response, next: NextFunction) => {
+        const  {class_start_date,class_id} = req.params
+        const result = await ClassService.getClassSchedule(req?.user?.id,class_id,class_start_date); 
+
+        sendResponse(res, {
+            success: true,
+            statusCode: StatusCodes.OK,
+            message: 'Class schedule retrieved successfully',
+            data: result,
+        })
+    }
+)
+
+
 
 export const ClassController = {
     createClass,
-    getClassesByClubId
+    getClassesByClubId,
+    getClassSchedule
 };

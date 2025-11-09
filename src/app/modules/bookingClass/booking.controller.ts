@@ -20,21 +20,6 @@ const createBookingClass = catchAsync(
 );
 
 
-const getBookingClassesByClubId = catchAsync(
-    async (req: Request, res: Response, next: NextFunction) => {
-        const clubId = req.params.club_id;
-        const userId = req.user?.id;
-        const result = await BookingClassService.getBookingClassesByClubId(clubId, userId);
-
-        sendResponse(res, {
-            success: true,
-            statusCode: StatusCodes.OK,
-            message: 'Booking classes retrieved successfully',
-            data: result,
-        });
-    }
-);
-
 
 const orderSuccess = catchAsync(
     async (req: Request, res: Response, next: NextFunction) => {
@@ -121,7 +106,6 @@ const getBookingAttendance = catchAsync(
 
 export const ClassController = {
     createBookingClass,
-    getBookingClassesByClubId,
     orderSuccess,
     orderCancel,
     addToWaitingList,
