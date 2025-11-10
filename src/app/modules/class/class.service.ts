@@ -311,8 +311,9 @@ export const getClassesByClubId = async (clubId: string, userId: string): Promis
         allOccurrences.push(...occurrences);
     }
 
+     console.log({userId})
 
-    const userCredit = await UserCredit.findOne({ clubId, user: userId }).lean() || { credit: 0 };
+    const userCredit = await UserCredit.findOne({ club:clubId, user: userId })?.lean() ?? { credit: 0 };
 
     return {
         userCredit: userCredit.credit,
@@ -343,7 +344,7 @@ export const getClassSchedule = async (
 
     // 🟢 Run these 3 in parallel to reduce I/O waits
     const [creditDoc, allBookings, myBookings] = await Promise.all([
-        UserCredit.findOne({ club: existClass.club._id, user: user_id })
+        UserCredit.findOne({ club: existClass.club, user: user_id })
             .select('credit')
             .lean(),
         BookingClass.find({

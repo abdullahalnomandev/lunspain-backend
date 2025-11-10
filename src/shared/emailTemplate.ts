@@ -170,14 +170,15 @@ const WelcomeMessageForWaitingList = (email: string, waitingEntry: IBookingClass
   };
 };
 
-const WelcomeMessageForCancellation = (email: string) => {
+const MessageForCancellation = (booking:IBookingClass,email: string) => {
   return {
     to: email,
     subject: 'Welcome to Lunspain',
     html: `
     <body>
-    <h1>Welcome to Lunspain</h1>
+    <h1>Welcome to Lunspain ${booking.booking_id} payment method: ${booking.payment_method} </h1>
     <p>Your class booking has been cancelled successfully.</p>
+    <p>Refund Staus:Canclled</p>
     </body>
   `,
   };
@@ -271,7 +272,7 @@ export const emailTemplate = {
   WelcomMessageForClassCreation,
   WelcomMessageForClassBooking,
   WelcomeMessageForWaitingList,
-  WelcomeMessageForCancellation,
+  MessageForCancellation,
   WelcomeMessageForAcceptSpeceASQue,
   RequestToCloseClub,
   AccountClosedNotificaiton

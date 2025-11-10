@@ -7,7 +7,7 @@ import ApiError from '../../../errors/ApiError';
 import { MEMBERS_STATUS, PAYMENT_METHOD, PAYMENT_STATUS } from './booking.constant';
 import { UserCredit } from '../user/credit/user.credit.model';
 import { Class } from '../class/class.model';
-import { generateOrderId, sendBookingConfirmEmail } from './booking.util';
+import { addCreditForCardPayment, generateOrderId, sendBookingConfirmEmail } from './booking.util';
 import { BookingClassCardService } from './booking.stripe';
 import { emailTemplate } from '../../../shared/emailTemplate';
 import { emailHelper } from '../../../helpers/emailHelper';
@@ -64,7 +64,7 @@ const createBookingClass = async (payload: Partial<IBookingClass & { date_of_cla
   // ---------------------------
   // 3. Check existing booking
   // ---------------------------
-  const isAlreadyBooked = await BookingClass.findOne({ user, club, class: classId,class_booking_ref_id:`${date_of_class.split('T')[0]}_${classExists._id}` });
+  const isAlreadyBooked = await BookingClass.findOne({ user, club, class: classId, class_booking_ref_id: `${date_of_class.split('T')[0]}_${classExists._id}` });
   if (isAlreadyBooked?.attandence_status === MEMBERS_STATUS.CANCEL || isAlreadyBooked?.attandence_status === MEMBERS_STATUS.WAIT) {
     await BookingClass.deleteOne({ _id: isAlreadyBooked._id }, { new: true });
   }
@@ -98,18 +98,20 @@ const createBookingClass = async (payload: Partial<IBookingClass & { date_of_cla
   // 5. Payment method: PAY IN PERSON
   // ---------------------------
   if (payment_method === PAYMENT_METHOD.PAY_IN_PERSON) {
-    const userCredit = await UserCredit.findOne({ user, clubId: club });
+    const userCredit = await UserCredit.findOne({ user, club: club });
 
-    if (!userCredit || userCredit.credit < 1) {
-      payload.payment_status = PAYMENT_STATUS.PAY_IN_PERSON;
-    }
-    else {
+    console.log({userCredit})
+
+    if (userCredit && userCredit.credit >= 1) {
       payload.payment_status = PAYMENT_STATUS.PAID;
       await UserCredit.updateOne(
-        { user, clubId: club },
+        { user, club },
         { $inc: { credit: -1 } }
       );
+    }else{
+      payload.payment_status = PAYMENT_STATUS.PAY_IN_PERSON
     }
+
     const bookingClass = await BookingClass.create(payload);
     sendBookingConfirmEmail(userExists.email as string);
     return bookingClass;
@@ -119,7 +121,7 @@ const createBookingClass = async (payload: Partial<IBookingClass & { date_of_cla
   // 6. Payment method: STRIPE
   // ---------------------------
   if (payment_method === PAYMENT_METHOD.STRIPE) {
-    const createOrder = await BookingClassCardService.bookClass(payload as IBookingClass, origin );
+    const createOrder = await BookingClassCardService.bookClass(payload as IBookingClass, origin);
     return createOrder;
   }
 
@@ -152,7 +154,7 @@ const addToWaitingList = async (
   /* ------------------------------------------------------------------ */
   /* 2. Ensure user is a club member                                    */
   /* ------------------------------------------------------------------ */
-  const isMember = await ClubMember.findOne({club:clubExists._id,user:userExists?._id})
+  const isMember = await ClubMember.findOne({ club: clubExists._id, user: userExists?._id })
   if (!isMember)
     throw new ApiError(
       StatusCodes.FORBIDDEN,
@@ -290,47 +292,53 @@ const getAllBookingAttendance = async (userId: string, clubId: string, classId: 
 
 const cancelAttendence = async (userId: string, classBookingRefId: string) => {
 
-  const booking = await BookingClass.findOneAndUpdate({
+  // 1. Ensure the booking exists and belongs to the caller
+  const booking = await BookingClass.findOne({
     user: userId,
     class_booking_ref_id: classBookingRefId,
-    attandence_status: MEMBERS_STATUS.ATTEND,
-  }, {
-    attandence_status: MEMBERS_STATUS.CANCEL,
-  }, {
-    new: true,
-  });
-
-  const userExists = await User.findById(userId).lean();
-  const classExists = await Class.findById(booking?.class).lean();
-
-  if (!classExists) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Class not found');
-  }
-  if (!userExists) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'User not found');
-  }
-
+  }).lean();
   if (!booking) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Booking not found');
   }
 
-
-  if (booking.attandence_status === MEMBERS_STATUS.ATTEND && booking.payment_method === PAYMENT_METHOD.STRIPE && booking.payment_status === PAYMENT_STATUS.PAID) {
-    const existingCredit = await UserCredit.findOne({ user: userId, club: booking.club });
-    if (existingCredit) {
-      await UserCredit.updateOne(
-        { user: userId, club: booking.club },
-        { $inc: { credit: 1 } }
-      );
-    } else {
-      await UserCredit.create({ user: userId, club: booking.club, credit: 1 });
-    }
+  // 2. Ensure the club allows cancellation
+  const club = await Club.findById(booking.club).lean();
+  if (!club?.allow_class_cancelation) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Class cancellation is not enabled for this club');
   }
 
-  if (booking) {
-    const welcomeEmailTemplate = emailTemplate.WelcomeMessageForCancellation(userExists.email as string);
-    emailHelper.sendEmail(welcomeEmailTemplate);
+  // 3. Ensure the booking is still attendable
+  if (booking.attandence_status !== MEMBERS_STATUS.ATTEND) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Only attended bookings can be cancelled');
   }
+
+  // 4. Update the booking status
+  const updatedBooking = await BookingClass.findByIdAndUpdate(
+    booking._id,
+    { attandence_status: MEMBERS_STATUS.CANCEL },
+    { new: true }
+  ).lean();
+  if (!updatedBooking) {
+    throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to cancel booking');
+  }
+
+  // 5. Load related entities in parallel
+  const [userExists, classExists] = await Promise.all([
+    User.findById(userId).lean(),
+    Class.findById(booking.class).lean(),
+  ]);
+
+  if (!userExists) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'User not found');
+  }
+  if (!classExists) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Class not found');
+  }
+
+  // Create or increase a credit if payment with card
+  await addCreditForCardPayment(club, booking, userId, userExists.email, classBookingRefId, classExists.start_time)
+
+
 
   const maxCapacity = classExists.max_number_of_attendees;
   const totalBooked = await BookingClass.countDocuments({
@@ -360,6 +368,7 @@ const cancelAttendence = async (userId: string, classBookingRefId: string) => {
 
       if (!lastOrder) {
         cronJob.stop();
+        return;
       }
 
 
