@@ -1,6 +1,6 @@
 import { model, Schema, Types } from 'mongoose';
 import { IClass } from './class.interface';
-import { CLASS_ROLE, CLASS_STATUS, DAY_OF_WEEK, REPEAT_TYPE, REPEAT_UNTIL } from './class.constant';
+import { CLASS_ROLE, CLASS_STATUS, DAY_OF_WEEK, PERIOD_OF_MONTH, REPEAT_TYPE, REPEAT_UNTIL } from './class.constant';
 
 const classSchema = new Schema<IClass>(
     {
@@ -85,6 +85,14 @@ const classSchema = new Schema<IClass>(
             repeat_untilDate: {
                 type: Date,
             },
+            period_of_month: {
+                type: String,
+                enum: Object.values(PERIOD_OF_MONTH),
+            },
+            period_of_day: {
+                type: String,
+                enum: Object.values(DAY_OF_WEEK),
+            },
         },
         const_per_ticket: {
             type: Number,
@@ -113,6 +121,11 @@ const classSchema = new Schema<IClass>(
                 _id: false
             },
         ],
+        delete_class: {
+            type: Boolean,
+            default: false,
+            select:0
+        }
     },
     { timestamps: true }
 );

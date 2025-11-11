@@ -14,6 +14,10 @@ export enum DAY_OF_WEEK {
   FRIDAY = "friday",
   SATURDAY = "saturday",
   SUNDAY = "sunday",
+  // ------
+  DAY = "day",
+  WEEKEND= "weekend",
+  WEEKDAY = "weekday"
 }
 
 export enum REPEAT_UNTIL {
@@ -37,4 +41,13 @@ export enum MEMBERS_STATUS {
     WAIT = 'wait',
     CANCEL = 'cancel',
     LEADER = 'leader'
+}
+
+
+export enum PERIOD_OF_MONTH {
+  FIRST = 'first',
+  SECOND = 'second',
+  THIRD = 'third',
+  FOURTH = 'fourth',
+  LAST = 'last',
 }

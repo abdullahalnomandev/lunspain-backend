@@ -27,5 +27,9 @@ router
         ClassController.getClassSchedule
     )
 
+    router.delete('/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER), ClassController.deleteClass);
+
+    
+
 
 export const ClassRoutes = router;

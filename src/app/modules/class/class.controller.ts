@@ -51,9 +51,26 @@ const getClassSchedule = catchAsync(
 )
 
 
+const deleteClass = catchAsync(
+    async (req: Request, res: Response, next: NextFunction) => {
+        const { id } = req.params;
+        const user = req?.user?.id
+        const result = await ClassService.deleteClass(user,id);
+
+        sendResponse(res, {
+            success: true,
+            statusCode: StatusCodes.OK,
+            message: 'Class deleted successfully',
+            data: result,
+        });
+    }
+);
+
+
 
 export const ClassController = {
     createClass,
     getClassesByClubId,
-    getClassSchedule
+    getClassSchedule,
+    deleteClass
 };
