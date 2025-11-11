@@ -311,7 +311,8 @@ export const getClassesByClubId = async (clubId: string, userId: string): Promis
         allOccurrences.push(...occurrences);
     }
 
-     console.log({userId})
+
+
 
     const userCredit = await UserCredit.findOne({ club:clubId, user: userId })?.lean() ?? { credit: 0 };
 
