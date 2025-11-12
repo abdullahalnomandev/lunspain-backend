@@ -102,25 +102,10 @@ const classSchema = new Schema<IClass>(
             type: Number,
             required: true,
         },
-        class_members: [
-            {
-                user: {
-                    type: Schema.Types.ObjectId,
-                    ref: 'User',
-                    required: true,
-                },
-                role: {
-                    type: String,
-                    enum: Object.values(CLASS_ROLE),
-                    default: CLASS_ROLE.USER,
-                },
-                status: {
-                    type: String,
-                    require: true
-                },
-                _id: false
-            },
-        ],
+        class_mnamagers: [{
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+        }],
         delete_class: {
             type: Boolean,
             default: false,
@@ -131,5 +116,3 @@ const classSchema = new Schema<IClass>(
 );
 
 export const Class = model<IClass>('Class', classSchema);
-
-// { $set: { 'class_members.$.status': 'cancel' } }

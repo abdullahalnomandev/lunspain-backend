@@ -97,9 +97,11 @@ const userSchema = new Schema<IUser, UserModel>(
     },
     connected_account_id: {
       type: String,
+      select:0
     },
     stripe_connected_link: {
       type: String,
+      select:0
     },
   },
   { timestamps: true }

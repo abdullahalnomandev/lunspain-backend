@@ -4,15 +4,25 @@ import { User } from "../user/user.model";
 import { IUser } from "../user/user.interface";
 import ApiError from "../../../errors/ApiError";
 import { StatusCodes } from "http-status-codes";
+import { Club } from "../club/club.model";
 
 
-const createAccountLink = async (userId: string) => {
+const createAccountLink = async (userId: string,clubId:string) => {
 
-    const user = await User.findById(userId);
+    const [user, club] = await Promise.all([
+        User.findById(userId),
+        Club.findOne({club_creator:userId})
+    ]);
 
     if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'User not found');
+    if (!club) throw new ApiError(StatusCodes.NOT_FOUND, 'You are not the creator of any club');
 
-
+    if (user.connected_account_id && user.stripe_connected_link) {
+        throw new ApiError(
+            StatusCodes.CONFLICT,
+            'This user already has a connected Stripe account'
+        );
+    }
 
     // Create stripe account link
     let connected_id = user.connected_account_id;

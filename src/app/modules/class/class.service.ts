@@ -15,6 +15,8 @@ import { CLUB_ROLE } from '../club/club.constant';
 import ApiError from '../../../errors/ApiError';
 import { StatusCodes } from 'http-status-codes';
 import { categorizeOccurrences, getDayIndex } from './class.util';
+import { ClassStatus } from './class_status/class_status.model';
+import mongoose, { Types } from 'mongoose';
 
 dayjs.extend(utc);
 dayjs.extend(isoWeek);
@@ -30,6 +32,7 @@ export type Occurrence = {
     max_number_of_attendees: number;
     remaining_space?: number;
     booking_status?: string;
+    class_mnamagers?: string[];
 };
 
 export type ClassCategories = {
@@ -57,7 +60,7 @@ const createClass = async (payload: IClass) => {
     }
 
     // CLEAR AND VALIDAITON REOCCORING CLASS
-    const { class_members, creator, reoccurring_class } = payload;
+    const { class_mnamagers, creator, reoccurring_class } = payload;
     const { repeat_until, repeat, repeat_days_of_week, repeat_every, repeat_untilDate, total_occurrences } = reoccurring_class;
 
 
@@ -80,22 +83,17 @@ const createClass = async (payload: IClass) => {
 
 
 
-    if (class_members.length >= 2) {
+    if (class_mnamagers.length >= 2) {
         throw new Error('You can only create a club with up to 2 members');
     }
-    class_members.map((mem) => {
-        if (mem.status !== MEMBERS_STATUS.LEADER) throw new Error('All class members except the creator must have status LEADER');
 
-    })
-    class_members.push({ user: creator, role: CLASS_ROLE.CLASS_LEADER, status: MEMBERS_STATUS.LEADER });
-
+    class_mnamagers.push(creator as unknown as Types.ObjectId);
 
 
     const klass = await Class.create(payload);
 
     // SEND EMASILS
-    const club_membersIds = klass.class_members.filter(({ role }) => role === CLASS_ROLE.CLASS_LEADER).map(({ user }) => user)
-    const leaders = await User.find({ _id: { $in: club_membersIds } }).lean().select('-_id email');
+    const leaders = await User.find({ _id: { $in: klass.class_mnamagers } }).lean().select('-_id email');
     console.log(leaders)
 
     leaders.map(({ email }) => {
@@ -103,17 +101,17 @@ const createClass = async (payload: IClass) => {
         emailHelper.sendEmail(welcomeEmailTemplate);
     })
 
-
     return klass;
 };
 
 
 
 // Get classes by club id
-const generateOccurrences = (cls: any): Occurrence[] => {
+const generateOccurrences = (cls: any, maxDateInput: string): Occurrence[] => {
     const occurrences: Occurrence[] = [];
     const today = dayjs().startOf("day");
-    const maxDate = dayjs().add(1, "year").endOf("day"); // cap 1 year for forever
+    // const maxDate = dayjs().add(1, "year").endOf("day"); // cap 1 year for forever
+    const maxDate = maxDateInput ? dayjs(maxDateInput).endOf("day") : dayjs().add(1, "year").endOf("day");
 
     let current = dayjs(cls.date_of_class).startOf("day");
 
@@ -455,102 +453,22 @@ const generateOccurrences = (cls: any): Occurrence[] => {
     return occurrences;
 };
 
-// Utility: categorize occurrences into today / thisWeek / nextWeek / nextMonth / nextYear
-// const categorizeOccurrences = async (occurrences: Occurrence[], userId: string): Promise<ClassCategories> => {
-//     const today = dayjs().startOf("day");
-
-//     const startOfThisWeek = today.startOf("isoWeek");
-//     const endOfThisWeek = today.endOf("isoWeek");
-
-//     const startOfNextWeek = endOfThisWeek.add(1, "day").startOf("isoWeek");
-//     const endOfNextWeek = startOfNextWeek.endOf("isoWeek");
-
-//     const startOfNextMonth = today.add(1, "month").startOf("month");
-//     const endOfNextMonth = today.add(1, "month").endOf("month");
-
-//     const startOfNextYear = today.add(1, "year").startOf("year");
-//     const endOfNextYear = today.add(1, "year").endOf("year");
-
-//     const result: ClassCategories = {
-//         today: [],
-//         thisWeek: [],
-//         nextWeek: [],
-//         nextMonth: [],
-//         nextYear: []
-//     };
-
-//     for (const occ of occurrences) {
-//         const bookingRefId = `${occ.date_of_class.split('T')[0]}_${occ._id}`;
-
-//         const [totalBooked, isMyBooked, isCanceled] = await Promise.all([
-//             BookingClass.countDocuments({
-//                 club: occ.club,
-//                 class: occ._id,
-//                 attandence_status: MEMBERS_STATUS.ATTEND,
-//                 class_booking_ref_id: bookingRefId,
-//             }),
-//             BookingClass.exists({
-//                 club: occ.club,
-//                 user: userId,
-//                 class: occ._id,
-//                 attandence_status: MEMBERS_STATUS.ATTEND,
-//                 class_booking_ref_id: bookingRefId,
-//             }),
-//             BookingClass.exists({
-//                 club: occ.club,
-//                 user: userId,
-//                 class: occ._id,
-//                 attandence_status: MEMBERS_STATUS.CANCEL,
-//                 class_booking_ref_id: bookingRefId,
-//             }),
-//         ]);
-
-//         // ✅ Correct remaining seat calculation
-//         // @ts-ignore
-//         occ.remaining_space = occ.max_number_of_attendees - totalBooked;
-
-//         if (isMyBooked) {
-//             occ.booking_status = 'attended';
-//         } else if (isCanceled) {
-//             occ.booking_status = 'canceled';
-//         } else {
-//             occ.booking_status = totalBooked >= occ.max_number_of_attendees ? 'full' : 'available';
-//         }
-
-//         const occDate = dayjs(occ.date_of_class);
-
-//         if (occDate.isSame(today, "day")) {
-//             result.today.push(occ);
-//         } else if (occDate.isAfter(today) && (occDate.isSame(startOfThisWeek) || occDate.isAfter(startOfThisWeek)) && occDate.isBefore(endOfThisWeek.add(1, 'day'))) {
-//             result.thisWeek.push(occ);
-//         } else if (occDate.isAfter(startOfNextWeek.subtract(1, 'day')) && occDate.isBefore(endOfNextWeek.add(1, 'day'))) {
-//             result.nextWeek.push(occ);
-//         } else if (occDate.isAfter(startOfNextMonth.subtract(1, 'day')) && occDate.isBefore(endOfNextMonth.add(1, 'day'))) {
-//             result.nextMonth.push(occ);
-//         } else if (occDate.isAfter(startOfNextYear.subtract(1, 'day')) && occDate.isBefore(endOfNextYear.add(1, 'day'))) {
-//             result.nextYear.push(occ);
-//         }
-//     }
-
-//     return result;
-// };
-
-// Main function: get classes by clubId
 
 
-
-
-export const getClassesByClubId = async (clubId: string, userId: string): Promise<ClassCategories & { userCredit: any }> => {
+export const getClassesByClubId = async (clubId: string, userId: string, query: Record<string, any>): Promise<ClassCategories & { userCredit: any }> => {
+    console.log(query.maxDate)
     const classes = await Class.find(
         { club: clubId, delete_class: false },
-        "date_of_class duration start_time reoccurring_class club creator class_status const_per_ticket max_number_of_attendees class_name delete_class"
+        "date_of_class duration start_time reoccurring_class club creator class_status const_per_ticket max_number_of_attendees class_name delete_class class_mnamagers"
     ).lean();
 
     const allOccurrences: Occurrence[] = [];
     for (const cls of classes) {
-        const occurrences = generateOccurrences(cls); // prevent mutation
+        const occurrences = generateOccurrences(cls, query.maxDate); // prevent mutation
         allOccurrences.push(...occurrences);
     }
+
+    console.log(allOccurrences)
 
     const userCredit = await UserCredit.findOne({ club: clubId, user: userId })?.lean() ?? { credit: 0 };
 
@@ -559,6 +477,8 @@ export const getClassesByClubId = async (clubId: string, userId: string): Promis
         ...(await categorizeOccurrences(allOccurrences, userId))
     };
 };
+
+
 
 
 export const getClassSchedule = async (
@@ -592,7 +512,7 @@ export const getClassSchedule = async (
         })
             .select('attandence_status user')
             .lean(),
-        BookingClass.find({
+        BookingClass.findOne({
             class: existClass._id,
             user: user_id,
             class_booking_ref_id: bookingRefId,
@@ -603,37 +523,35 @@ export const getClassSchedule = async (
 
     // 🟢 Aggregate counts in-memory instead of multiple DB calls
     const attendanceSummary = {
-        attend: allBookings.filter(b => b.attandence_status === MEMBERS_STATUS.ATTEND).length,
-        wait: allBookings.filter(b => b.attandence_status === MEMBERS_STATUS.WAIT).length,
-        cancel: allBookings.filter(b => b.attandence_status === MEMBERS_STATUS.CANCEL).length,
+        attend: allBookings.filter((b:any) => b.attandence_status === MEMBERS_STATUS.ATTEND).length,
+        wait: allBookings.filter((b:any) => b.attandence_status === MEMBERS_STATUS.WAIT).length,
+        cancel: allBookings.filter((b:any) => b.attandence_status === MEMBERS_STATUS.CANCEL).length,
     };
 
     const totalBooked = attendanceSummary.attend;
 
     // 🟢 Check if user is a manager (class member)
-    const isManager = Array.isArray(existClass.class_members)
-        ? existClass.class_members.some(
-            (member: any) => member.user?.toString() === user_id.toString()
-        )
-        : false;
+    const isLeader = Array.isArray(existClass.class_mnamagers) ? existClass.class_mnamagers.find((userId: Types.ObjectId) => userId?.toString() === user_id) : false;
+
+    const getStatus = await ClassStatus.findOne({ class_booking_ref_id: bookingRefId });
 
     const classData: any = {
         ...existClass,
-        allow_waiting_list: existClass.club?.allow_waiting_list || false,
-        allow_class_cancelation: existClass.club?.allow_class_cancelation || false,
+        allow_waiting_list: (existClass.club as any)?.allow_waiting_list || false,
+        allow_class_cancelation: (existClass.club as any)?.allow_class_cancelation || false,
         total_user_credit: creditDoc?.credit || 0,
-        in_person_payment: existClass.club?.payment?.in_person_payment || false,
+        in_person_payment: (existClass.club as any)?.payment?.in_person_payment || false,
         remaining_space: existClass.max_number_of_attendees - totalBooked,
         attendance_summary: attendanceSummary,
-        is_manager: isManager,
+        isLeader:!!isLeader,
+        ...(isLeader && { is_visiable: getStatus?.is_visiable })
 
     };
 
     // 🟢 Determine user's booking status (from myBookings)
-    const myStatus = myBookings[0]?.attandence_status;
-    if (myStatus === MEMBERS_STATUS.ATTEND) {
+    if ((myBookings?.attandence_status as any) === MEMBERS_STATUS.ATTEND) {
         classData.booking_status = 'attended';
-    } else if (myStatus === MEMBERS_STATUS.CANCEL) {
+    } else if ((myBookings?.attandence_status as any) === MEMBERS_STATUS.CANCEL) {
         classData.booking_status = 'canceled';
     } else {
         classData.booking_status =
@@ -649,145 +567,130 @@ const deleteClass = async (userId: string, id: string) => {
     const cls = await Class.findById(id).lean().select('+delete_class');
     if (!cls) throw new ApiError(StatusCodes.NOT_FOUND, 'Class not found');
 
-    if(cls.delete_class){
-        throw new ApiError(StatusCodes.BAD_REQUEST,"Class already deleted...")
+    if (cls.delete_class) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, "Class already deleted...")
     }
     console.log(cls)
 
-    const isLeader = cls.class_members.some(
-        (m: any) => m.user.toString() === userId && m.role === CLASS_ROLE.CLASS_LEADER
-    );
+    const isLeader = cls.class_mnamagers.find((user: any) => user.toString() === userId );
     if (!isLeader) throw new ApiError(StatusCodes.FORBIDDEN, 'Only class leaders can delete this class');
 
-        console.log({id})
+    console.log({ id })
     const deletedClass = await Class.findByIdAndUpdate(id, { delete_class: true }, { new: true });
     return deletedClass;
 }
 
 
+const updateClass = async (payload: IClass & { club_id: string; class_id: string }) => {
+    // Validate club exists
+    const [clubExist, classExist, isMemberOfClass] = await Promise.all([
+        Club.findById(payload.club_id).lean().select('_id'),
+        Class.findById(payload.class_id).lean().select('_id'),
+        ClubMember.findOne({
+            user: payload.creator,
+            club: payload.club_id,
+            role: CLUB_ROLE.CLUB_MANAGER
+        })
+    ]);
+
+    if (!clubExist) {
+        throw new Error('Club id not correct!');
+    }
+
+    if (!classExist) {
+        throw new Error('Class id not correct!');
+    }
+
+    if (!isMemberOfClass) {
+        throw new Error('Creator is not a manager of the club');
+    }
+
+    // Update the class
+    const updatedClass = await Class.findByIdAndUpdate(
+        payload.class_id,
+        payload,
+        { new: true, runValidators: true }
+    );
+
+    if (!updatedClass) {
+        throw new Error('Class not found');
+    }
+
+    // SEND EMAILS
+    // const club_membersIds = updatedClass.class_members
+    //     .filter(({ role }) => role === CLASS_ROLE.CLASS_LEADER)
+    //     .map(({ user }) => user);
+    // const leaders = await User.find({ _id: { $in: club_membersIds } }).lean().select('email');
+
+    // leaders.forEach(({ email }) => {
+    //     const welcomeEmailTemplate = emailTemplate.WelcomMessageForClassCreation(email as string);
+    //     emailHelper.sendEmail(welcomeEmailTemplate);
+    // });
+
+    return updatedClass;
+};
+
+
+const updateStatus = async (payload: {
+    club: string;
+    class: string;
+    date_of_class: string;
+    is_visiable: boolean;
+    creator: string;
+}) => {
+    // Validate club, class, and manager role
+    const [clubExist, classExist, isMemberOfClass] = await Promise.all([
+        Club.findById(payload.club).lean().select('_id'),
+        Class.findById(payload.class).lean().select('_id'),
+        ClubMember.findOne({
+            user: payload.creator,
+            club: payload.club,
+            role: CLUB_ROLE.CLUB_MANAGER,
+        }),
+    ]);
+
+    if (!clubExist) throw new Error('Club id not correct!');
+    if (!classExist) throw new Error('Class id not correct!');
+    if (!isMemberOfClass) throw new Error('Creator is not a manager of the club');
+
+    const classStatus_ref_id = `${payload.date_of_class.split('T')[0]}_${payload.class}`;
+
+
+    // Check if ClassStatus exists with class_booking_ref_id
+    const existingStatus = await ClassStatus.findOne({
+        class_booking_ref_id: classStatus_ref_id,
+        club: clubExist._id
+    });
+
+    let updatedStatus;
+    if (existingStatus) {
+        // 🔁 Update existing record
+        updatedStatus = await ClassStatus.findOneAndUpdate(
+            { class_booking_ref_id: classStatus_ref_id, club: existingStatus.club },
+            {
+                is_visiable: payload.is_visiable
+            },
+            { new: true, runValidators: true }
+        );
+    } else {
+        // 🆕 Create new record
+        updatedStatus = await ClassStatus.create({
+            class_booking_ref_id: classStatus_ref_id,
+            club: payload.club,
+            is_visiable: payload.is_visiable,
+        });
+    }
+
+
+    return updatedStatus;
+
+};
+
 export const ClassService = {
     createClass,
     getClassesByClubId,
     getClassSchedule,
-    deleteClass
+    deleteClass,
+    updateClass,
+    updateStatus
 };
-
-//     reoccurring_class: {
-//     repeat: REPEAT_TYPE; // repeat type
-//     repeat_every: number; //repeat time
-//     repeat_days_of_week: (DAY_OF_WEEK)[]; //if select weekly || yearlly
-//     day_of_month: number; // if select repeat montyley
-//     repeat_until ?: REPEAT_UNTIL; // ex: forever
-//     total_occurrences ?: number // If select after_occurences
-//     repeat_untilDate ?: Date // If select until_date // ISO date string: "YYYY-MM-DD"
-// },
-
-// const generateOccurrences = (cls: any): Occurrence[] => {
-//     const occurrences: Occurrence[] = [];
-//     const today = dayjs().startOf("day");
-//     const maxDate = dayjs().add(1, "year").endOf("day"); // cap 1 year for forever
-
-//     let current = dayjs(cls.date_of_class).startOf("day");
-
-//     if (cls.reoccurring_class.repeat === "none") {
-//         // only show if today or future
-//         if (current.isSame(today) || current.isAfter(today)) {
-//             occurrences.push({ ...cls, date_of_class: current.toISOString() });
-//         }
-//         return occurrences;
-//     }
-
-//     if (cls.reoccurring_class.repeat === "daily") {
-//         const repeatEvery = cls.reoccurring_class.repeat_every || 1;
-
-//         let count = 0;
-//         let totalOccurrences =
-//             cls.reoccurring_class.total_occurrences || Infinity;
-//         let untilDate = cls.reoccurring_class.repeat_untilDate
-//             ? dayjs(cls.reoccurring_class.repeat_untilDate).endOf("day")
-//             : maxDate;
-
-//         // adjust max date if repeat_until is forever
-//         if (cls.reoccurring_class.repeat_until === "forever") {
-//             untilDate = dayjs().add(1, "year").endOf("day");
-//         }
-
-//         while (
-//             (current.isSame(untilDate) || current.isBefore(untilDate)) &&
-//             count < totalOccurrences &&
-//             (current.isSame(maxDate) || current.isBefore(maxDate))
-//         ) {
-//             if (current.isSame(today) || current.isAfter(today)) {
-//                 occurrences.push({ ...cls, date_of_class: current.toISOString() });
-//             }
-
-//             current = current.add(repeatEvery, "day");
-//             count++;
-//         }
-//     }
-
-
-//     return occurrences;
-// };
-
-// // Utility: categorize occurrences into today / thisWeek / nextWeek / nextMonth / nextYear
-// const categorizeOccurrences = (occurrences: Occurrence[]): ClassCategories => {
-//     const today = dayjs().startOf("day");
-
-//     const startOfThisWeek = today.startOf("isoWeek");
-//     const endOfThisWeek = today.endOf("isoWeek");
-
-//     const startOfNextWeek = endOfThisWeek.add(1, "day").startOf("isoWeek");
-//     const endOfNextWeek = startOfNextWeek.endOf("isoWeek");
-
-//     const startOfNextMonth = today.add(1, "month").startOf("month");
-//     const endOfNextMonth = today.add(1, "month").endOf("month");
-
-//     const startOfNextYear = today.add(1, "year").startOf("year");
-//     const endOfNextYear = today.add(1, "year").endOf("year");
-
-//     const result: ClassCategories = {
-//         today: [],
-//         thisWeek: [],
-//         nextWeek: [],
-//         nextMonth: [],
-//         nextYear: []
-//     };
-
-//     for (const occ of occurrences) {
-//         const occDate = dayjs(occ.date_of_class);
-
-//         if (occDate.isSame(today, "day")) {
-//             result.today.push(occ);
-//         } else if (occDate.isAfter(today) && (occDate.isSame(startOfThisWeek) || occDate.isAfter(startOfThisWeek)) && occDate.isBefore(endOfThisWeek.add(1, 'day'))) {
-//             result.thisWeek.push(occ);
-//         } else if (occDate.isAfter(startOfNextWeek.subtract(1, 'day')) && occDate.isBefore(endOfNextWeek.add(1, 'day'))) {
-//             result.nextWeek.push(occ);
-//         } else if (occDate.isAfter(startOfNextMonth.subtract(1, 'day')) && occDate.isBefore(endOfNextMonth.add(1, 'day'))) {
-//             result.nextMonth.push(occ);
-//         } else if (occDate.isAfter(startOfNextYear.subtract(1, 'day')) && occDate.isBefore(endOfNextYear.add(1, 'day'))) {
-//             result.nextYear.push(occ);
-//         }
-//     }
-
-//     return result;
-// };
-
-// // Main function: get classes by clubId
-// export const getClassesByClubId = async (clubId: string): Promise<ClassCategories> => {
-//     const classes = await Class.find(
-//         { club: clubId },
-//         "date_of_class duration start_time reoccurring_class club creator class_status const_per_ticket max_number_of_attendees class_name"
-//     ).lean();
-
-//     const allOccurrences: Occurrence[] = [];
-//     for (const cls of classes) {
-//         const occurrences = generateOccurrences(cls);
-//         allOccurrences.push(...occurrences);
-//     }
-
-//     return categorizeOccurrences(allOccurrences);
-// };
-
-
-// when select  cls.reoccurring_class.repeat = forever  (will forever don't need to show option repeat_until total_occurrences)

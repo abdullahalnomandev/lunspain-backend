@@ -22,6 +22,7 @@ import { User } from '../user/user.model';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import isYesterday from 'dayjs/plugin/isYesterday';
+import { Follower } from '../user/follower/follower.model';
 
 //Create a new club
 const createPost = async (payload: IPOST) => {
@@ -269,17 +270,21 @@ const getALlTypeOfpost = async (
       searchableField = clubSearchableField;
       break;
     case POST_SERCH_TYPE.USER:
-      buildQuery = User.find();
+      buildQuery = User.find({ _id: { $ne: userId } });
       searchableField = userSearchableField;
       break;
     case POST_SERCH_TYPE.VIDEO:
       buildQuery = Post.find({ post_type: POST_TYPE.VIDEO });
       searchableField = postSearchableField;
       break;
+    case POST_SERCH_TYPE.SKILL:
+      buildQuery = Post.find();
+      searchableField = postSearchableField;
+      break;
     default:
       throw new ApiError(
         StatusCodes.BAD_REQUEST,
-        `Invalid post type. Provide (${POST_SERCH_TYPE.PHOTO} or ${POST_SERCH_TYPE.CLUB} or ${POST_SERCH_TYPE.USER} or ${POST_SERCH_TYPE.VIDEO} ) `
+        `Invalid post type. Provide (${POST_SERCH_TYPE.PHOTO} or ${POST_SERCH_TYPE.CLUB} or ${POST_SERCH_TYPE.USER} or ${POST_SERCH_TYPE.VIDEO} or ${POST_SERCH_TYPE.SKILL} ) `
       );
   }
 
@@ -301,6 +306,34 @@ const getALlTypeOfpost = async (
           club: club._id,
         });
         return { ...club.toObject(), club_members: memberCount };
+      })
+    );
+  }
+
+  if (postType === POST_SERCH_TYPE.USER) {
+    posts = await Promise.all(
+      posts.map(async (user: any) => {
+        const isFollowed = await Follower.findOne({
+          follower: userId,
+          following: user?._id,
+        });;
+        return { ...user.toObject(), isFollowed: !!isFollowed };
+      })
+    );
+  }
+
+  if (postType === POST_SERCH_TYPE.PHOTO || postType === POST_SERCH_TYPE.VIDEO || postType === POST_SERCH_TYPE.SKILL) {
+    posts = await Promise.all(
+      posts.map(async (post: any) => {
+        const [commentOfPost, likeOfPost] = await Promise.all([
+          Comment.countDocuments({ post: post._id }).lean(),
+          Like.countDocuments({ post: post._id }).lean(),
+        ]);
+        return {
+          ...post.toObject(),
+          commentOfPost,
+          likeOfPost
+        };
       })
     );
   }

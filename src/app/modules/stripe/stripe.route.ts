@@ -5,7 +5,7 @@ import { StripeController } from './stripe.controller';
 const router = express.Router();
 
 
-router.route('/create-link').post(
+router.route('/create-link/:clubId').post(
     auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
     (req: Request, res: Response, next: NextFunction) => {
         return StripeController.getAccountLink(req, res, next);

@@ -13,23 +13,43 @@ router
         ClassController.createClass
     )
 
-    router
+router
     .route('/:club_id')
     .get(
         auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
         ClassController.getClassesByClubId
     )
 
-    router
+router
     .route('/class-schedule-details/:class_id/:class_start_date')
     .get(
         auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
         ClassController.getClassSchedule
     )
+router
+    .route('/:id')
+    .delete(
+        auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+        ClassController.deleteClass
+    )
 
-    router.delete('/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER), ClassController.deleteClass);
+router
+    .route('/update/:club_id/:class_id')
+    .patch
+    (
+        auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+        ClassController.updateClass
+    )
 
-    
+router
+    .route('/update/status')
+    .patch
+    (
+        auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+        ClassController.updateStatus
+    )
+
+
 
 
 export const ClassRoutes = router;

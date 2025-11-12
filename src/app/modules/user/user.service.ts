@@ -16,6 +16,7 @@ import { userSearchableField } from './user.constant';
 import { IUser, IUserProfile } from './user.interface';
 import { User } from './user.model';
 import { getAppleUserInfoWithToken, getUserInfoWithToken } from './user.util';
+import { ClubMember } from '../club/club_members/club_members.model';
 
 const createUserToDB = async (
   payload: Partial<IUser>
@@ -209,25 +210,26 @@ const updateSkypeProfileToDB = async (
 };
 
 const getAllUsers = async (query: Record<string, any>) => {
-  const userQuery = new QueryBuilder(User.find(), query)
+  const club_id = query.club_id;
+
+  // Build base query
+  let baseQuery = User.find();
+
+  // If club_id exists, filter users who are members of the club
+  if (club_id) {
+    const clubMemberDocs = await ClubMember.find({ club: club_id }).lean();
+    const memberUserIds = clubMemberDocs.map(doc => doc.user);
+    baseQuery = User.find({ _id: { $in: memberUserIds } });
+  }
+
+  const userQuery = new QueryBuilder(baseQuery, query)
     .paginate()
     .search(userSearchableField)
     .fields()
-    .filter()
+    .filter(['club_id'])
     .sort();
 
-  const result = await userQuery.modelQuery
-    // .populate({
-    //   path: "airlineVerification",
-    //   match: { paymentStatus: "paid" },
-    //   select: "designation plan employeeId images paymentStatus paymentMethod",
-    //   populate: {
-    //     path: "plan",
-    //     select: "-active",
-    //   },
-    // })
-    .lean();
-
+  const result = await userQuery.modelQuery.lean();
   const pagination = await userQuery.getPaginationInfo();
 
   return {
@@ -235,7 +237,15 @@ const getAllUsers = async (query: Record<string, any>) => {
     data: result,
   };
 };
-
+// .populate({
+//   path: "airlineVerification",
+//   match: { paymentStatus: "paid" },
+//   select: "designation plan employeeId images paymentStatus paymentMethod",
+//   populate: {
+//     path: "plan",
+//     select: "-active",
+//   },
+// })
 export const toggleFollowUser = async (userId: string, targetId: string) => {
   if (userId === targetId) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'You cannot follow yourself');

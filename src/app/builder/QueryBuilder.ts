@@ -28,15 +28,14 @@ class QueryBuilder<T> {
   }
 
   //filtering
-  filter() {
+  filter(othersExcludeFIelds?: string[]) {
     const queryObj = { ...this.query };
-    const excludeFields = ['searchTerm', 'sort', 'page', 'limit', 'fields'];
+    const excludeFields = ['searchTerm', 'sort', 'page', 'limit', 'fields', ...(othersExcludeFIelds || [])];
     excludeFields.forEach(el => delete queryObj[el]);
 
     this.modelQuery = this.modelQuery.find(queryObj as FilterQuery<T>);
     return this;
   }
-
   //sorting
   sort() {
     let sort = (this?.query?.sort as string) || '-createdAt';

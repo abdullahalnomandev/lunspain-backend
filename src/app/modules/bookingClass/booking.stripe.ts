@@ -10,6 +10,7 @@ import { Class } from '../class/class.model';
 import ApiError from '../../../errors/ApiError';
 import { StatusCodes } from 'http-status-codes';
 import { sendBookingConfirmEmail } from './booking.util';
+import { Club } from '../club/club.model';
 
 // import { RoyalMailOrderService } from './royalmail/order.roymail.service';
 
@@ -29,6 +30,10 @@ export const bookClass = async (payload: IBookingClass, origin: string) => {
         payload.payment_status = PAYMENT_STATUS.PENDING;
         const create_booking = await BookingClass.create(payload);
 
+        const club = await Club.findById(classInfo?.club);
+        const user = await User.findById(club?.club_creator).select('+connected_account_id');
+        console.log({user})
+
         const vatRate = 0.45; // transaction charge ($0.45)
         const baseAmount = classInfo?.const_per_ticket || 0;
         const finalAmount = Math.round((baseAmount + vatRate) * 100); // convert USD to cents
@@ -40,13 +45,14 @@ export const bookClass = async (payload: IBookingClass, origin: string) => {
         // Step 3: Create Stripe checkout session
         //@ts-ignore
         const stripeSession = await stripe.checkout.sessions.create({
-            payment_method_types: ["card", "paypal"],
+            payment_method_types: ["card"],
+            // payment_method_types: ["card", "paypal"],
             mode: "payment",
             customer_email: userInfo.email,
             line_items: [
                 {
                     price_data: {
-                        currency: "usd",
+                        currency: club?.payment?.currency_of_payment ?? "usd",
                         product_data: {
                             name: classInfo?.class_name as string,
                             description: `${classInfo?.description as string} (includes $0.45 transaction fee)`,
@@ -60,12 +66,12 @@ export const bookClass = async (payload: IBookingClass, origin: string) => {
                 bookingId: payload.booking_id.toString(),
                 customerId: userInfo._id.toString(),
             },
-            // payment_intent_data: {
-            //     application_fee_amount: Math.round(finalAmount * 0.1 * 100), // 10% fee
-            //     transfer_data: {
-            //         destination: 'ar3e3', // must be acct_xxx
-            //     },
-            // },
+            payment_intent_data: {
+                application_fee_amount: Math.round(finalAmount * 0.1 * 100), // 10% fee
+                transfer_data: {
+                    destination:  String(user?.connected_account_id), // must be acct_xxx
+                },
+            },
             success_url: `${origin}/api/v1/book-class-attandence/success?status=success&bookingId=${create_booking.booking_id}`,
             cancel_url: `${origin}/api/v1/book-class-attandence/cancel?status=cancel&bookingId=${create_booking.booking_id}`,
         });

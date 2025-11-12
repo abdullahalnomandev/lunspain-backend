@@ -33,13 +33,7 @@ export type IClass = {
   },
   const_per_ticket:number; // additional 0.45 will be add to cover transaction fee
   max_number_of_attendees:number;
-  class_members: [
-    {
-      user: Schema.Types.ObjectId;
-      role: CLASS_ROLE.USER | CLASS_ROLE.CLASS_LEADER;
-      status:MEMBERS_STATUS
-    }
-  ];
+  class_mnamagers: [ Types.ObjectId];
   delete_class: boolean;
 };
 
