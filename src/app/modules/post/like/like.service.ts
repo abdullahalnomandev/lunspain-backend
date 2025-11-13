@@ -2,6 +2,16 @@ import { StatusCodes } from 'http-status-codes';
 import ApiError from '../../../../errors/ApiError';
 import QueryBuilder from '../../../builder/QueryBuilder';
 import { Like } from './like.model';
+import { Post } from '../post.model';
+import { User } from '../../user/user.model';
+import { Notification } from '../../notification/notification.mode';
+import dayjs from 'dayjs';
+import { CREATOR_TYPE } from '../post.constant';
+import { ClubNotificationSettings } from '../../club/notificaiton_settings/notification_settings.model';
+import { Club } from '../../club/club.model';
+import { IClubNotificationSettings } from '../../club/notificaiton_settings/notifation_sttings.interface';
+import { NOTIFICATION_OPTION } from '../../club/notificaiton_settings/notification_settings.constant';
+import { Follower } from '../../user/follower/follower.model';
 
 const createLike = async (postId: string, userId: string) => {
   // Check if like already exists
@@ -14,7 +24,61 @@ const createLike = async (postId: string, userId: string) => {
     );
   }
 
+  // // Create the like
   const like = await Like.create({ post: postId, user: userId });
+  await like.populate('post', 'creator creator_type club');
+
+  // Get the post owner (receiver of the notification)
+  const creator = (like.post as any).creator;
+  const creatorType = (like.post as any)?.creator_type;
+  const club = (like.post as any)?.club;
+  const getClubInfo = await Club.findById(club,'notification_settings').lean()
+  const clubNotificaiton = await ClubNotificationSettings.findById(getClubInfo?.notification_settings) as IClubNotificationSettings;
+
+  const isFollowed = await Follower.findOne({ following: userId, follower: creator })
+  console.log({clubNotificaiton})
+
+  if (creatorType === CREATOR_TYPE.CLUB && clubNotificaiton.likes_on_your_posts === NOTIFICATION_OPTION.FROM_EVERYONE && creator.toString() !== userId) {
+
+    const notificaiton = Notification.create({
+      receiver: (like.post as any).creator,
+      sender: userId,
+      title: "Liked on your post",
+      refId: postId,
+      path: "/post/like"
+    });
+    if (!notificaiton) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'somthing went wrong to give notification from like.');
+    }
+  }
+  // else if (creatorType === CREATOR_TYPE.CLUB && clubNotificaiton.likes_on_your_posts === NOTIFICATION_OPTION.FROM_PROFILES_I_FOLLOW && isFollowed && creator.toString() !== userId) {
+
+  //   const notificaiton = Notification.create({
+  //     receiver: (like.post as any).creator,
+  //     sender: userId,
+  //     title: "Liked on your post",
+  //     refId: postId,
+  //     path: "/post/like"
+  //   });
+  //   if (!notificaiton) {
+  //     throw new ApiError(StatusCodes.BAD_REQUEST, 'somthing went wrong to give notification from like.');
+  //   }
+  // }
+  // else if (creatorType === CREATOR_TYPE.USER && creator.toString() !== userId) {
+  //   const notificaiton = Notification.create({
+  //     receiver: (like.post as any).creator,
+  //     sender: userId,
+  //     title: "Liked on your post",
+  //     refId: postId,
+  //     path: "/post/like"
+  //   });
+
+
+  //   if (!notificaiton) {
+  //     throw new ApiError(StatusCodes.BAD_REQUEST, 'somthing went wrong to give notification from like.');
+  //   }
+  // }
+
   return like;
 };
 

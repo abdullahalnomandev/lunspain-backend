@@ -9,7 +9,7 @@ export type IClubNotificationSettings = {
   accept_follow_requests: NOTIFICAITON_TOGGLE;
   message_requests: NOTIFICAITON_TOGGLE;
   club_community_messages: NOTIFICAITON_TOGGLE;
-  club_calendar_booking: NOTIFICAITON_TOGGLE;
+  club_cander_booking: NOTIFICAITON_TOGGLE;
   birthday_reminders: NOTIFICAITON_TOGGLE;
 };
 

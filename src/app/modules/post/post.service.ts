@@ -297,7 +297,7 @@ const getALlTypeOfpost = async (
     .filter()
     .sort();
 
-  let posts = await postQueryBuilder.modelQuery;
+  let posts = await postQueryBuilder.modelQuery.populate('creator','profile.image profile.username');
 
   if (postType === POST_SERCH_TYPE.CLUB) {
     posts = await Promise.all(
