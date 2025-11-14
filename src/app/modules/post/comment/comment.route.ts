@@ -24,7 +24,6 @@ router
   )
   .delete(
     auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
-    fileUploadHandler(),
     CommentController.deleteComment
   )
   .get(CommentController.getAllComments);

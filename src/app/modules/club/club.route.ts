@@ -79,12 +79,5 @@ router.get(
   ClubController.getClubCloseStatus
 );
 
-router.get('/notification-settings/:clubId',
-  auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
-  ClubController.getNotificationSettings);
-
-router.patch('/notification-settings/:clubId',
-  auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
-  ClubController.updateNotificationSettings);
 
 export const ClubRoutes = router;

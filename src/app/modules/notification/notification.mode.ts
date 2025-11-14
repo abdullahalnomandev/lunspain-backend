@@ -28,6 +28,9 @@ const notificationSchema = new Schema<INotification, INotificationModel>(
             type: String,
             required: true,
         },
+        deleteReferenceId: {
+            type: Schema.Types.ObjectId,
+        },
         seen: {
             type: Boolean,
             default: false,

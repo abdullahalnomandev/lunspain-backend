@@ -1,5 +1,6 @@
 import { Model, Types } from 'mongoose';
 import { USER_ROLES } from '../../../enums/user';
+import { IUserNotificationSettings } from './notificaiton_settings/notifation_sttings.interface';
 
 export interface IUserProfile {
   firstName?: string;
@@ -12,14 +13,13 @@ export interface IUserProfile {
   image?: string;
   cover_image?: string;
   username?: string;
-  followers?: [Types.ObjectId],
-  following?: [Types.ObjectId]
-
+  followers?: [Types.ObjectId];
+  following?: [Types.ObjectId];
 }
 
 export interface IUser {
   _id: Types.ObjectId;
-  profile: (IUserProfile & { _id: Types.ObjectId });
+  profile: IUserProfile & { _id: Types.ObjectId };
   confirm_password?: string;
   email: string;
   password: string;
@@ -30,6 +30,7 @@ export interface IUser {
   google_id_token?: string;
   apple_id_token?: string;
   auth_provider: 'local' | 'google' | 'apple';
+  notification_settings: Types.ObjectId | IUserNotificationSettings;
   connected_account_id?: string;
   stripe_connected_link?: string;
 }

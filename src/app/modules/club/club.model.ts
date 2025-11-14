@@ -1,7 +1,6 @@
 import { model, Schema } from 'mongoose';
 import { CLUB_PERIOD_TYPE } from './club.constant';
 import { ClubModel, IClub } from './club.interface';
-import { ClubNotificationSettings } from './notificaiton_settings/notification_settings.model';
 
 const clubSchema = new Schema<IClub, ClubModel>(
   {
@@ -47,11 +46,6 @@ const clubSchema = new Schema<IClub, ClubModel>(
     cover_image: {
       type: String,
     },
-    notification_settings: {
-      type: Schema.Types.ObjectId,
-      ref: 'ClubNotification',
-      default: null,
-    },
     allow_waiting_list: {
       type: Boolean,
       default: true,
@@ -83,28 +77,15 @@ const clubSchema = new Schema<IClub, ClubModel>(
     payment: {
       currency_of_payment: {
         type: String,
-        default: "usd"
+        default: 'usd',
       },
       in_person_payment: {
         type: Boolean,
         default: true,
       },
-    }
+    },
   },
   { timestamps: true }
 );
-
-// Pre-save hook must be BEFORE model compilation
-clubSchema.pre('save', async function (next) {
-  try {
-    if (!this.notification_settings) {
-      const createdSettings = await ClubNotificationSettings.create({});
-      this.notification_settings = createdSettings._id;
-    }
-    next();
-  } catch (err: any) {
-    next(err);
-  }
-});
 
 export const Club = model<IClub>('Club', clubSchema);

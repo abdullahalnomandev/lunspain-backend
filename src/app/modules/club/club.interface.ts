@@ -13,7 +13,6 @@ export type IClub = {
   club_specilaity: [string];
   image: string;
   cover_image: string;
-  notification_settings: Schema.Types.ObjectId;
   // Club Settings
   allow_waiting_list: boolean; // default: true
   allow_class_cancelation: boolean; // default: true
@@ -25,9 +24,9 @@ export type IClub = {
     community_and_sharing: boolean; // default: true
     booking_system: boolean; // default: true
   };
-  payment:{
+  payment: {
     currency_of_payment: string;
     in_person_payment: boolean;
-  }
+  };
 };
 export type ClubModel = Model<IClub, Record<string, unknown>>;

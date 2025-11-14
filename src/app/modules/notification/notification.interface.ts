@@ -8,6 +8,7 @@ export interface INotification {
   title: string;
   message: string;
   refId: Schema.Types.ObjectId;
+  deleteReferenceId: Schema.Types.ObjectId;
   path: string;
   seen: boolean;
   createdAt?: Date;

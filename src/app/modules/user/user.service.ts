@@ -17,6 +17,8 @@ import { IUser, IUserProfile } from './user.interface';
 import { User } from './user.model';
 import { getAppleUserInfoWithToken, getUserInfoWithToken } from './user.util';
 import { ClubMember } from '../club/club_members/club_members.model';
+import { IUserNotificationSettings } from './notificaiton_settings/notifation_sttings.interface';
+import { UserNotificationSettings } from './notificaiton_settings/notification_settings.model';
 
 const createUserToDB = async (
   payload: Partial<IUser>
@@ -449,6 +451,33 @@ const getFollowerListFromDB = async (
   };
 };
 
+const getAllNotificationSettingsFromDB = async (user: string) => {
+  const notificationSettings = await User.findById(
+    user,
+    '-_id notification_settings'
+  )
+    .populate('notification_settings')
+    .lean();
+
+  return notificationSettings?.notification_settings;
+};
+
+const updateNotificationSettingsFromDB = async (
+  user: string,
+  notificationSettings: IUserNotificationSettings
+) => {
+  const userExist = await User.findById(user, 'notification_settings').lean();
+  if (!userExist) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
+  }
+
+  return await UserNotificationSettings.findOneAndUpdate(
+    { _id: userExist.notification_settings },
+    { $set: notificationSettings },
+    { new: true }
+  );
+};
+
 export const UserService = {
   createUserToDB,
   getUserProfileFromDB,
@@ -461,4 +490,6 @@ export const UserService = {
   getUserProfileByIdFromDB,
   getFollowerListFromDB,
   getFollowingListFromDB,
+  getAllNotificationSettingsFromDB,
+  updateNotificationSettingsFromDB,
 };

@@ -12,8 +12,6 @@ import { CloseClubRequest } from './privacy/close_club_request.model';
 import setCronJob from '../../../shared/setCronJob';
 import { CLOSING_STATUS } from './privacy/close_club_request.interface';
 import { ClubMemberLeave } from './club_members/club_member_leave.model';
-import { ClubNotificationSettings } from './notificaiton_settings/notification_settings.model';
-import { IClubNotificationSettings } from './notificaiton_settings/notifation_sttings.interface';
 
 //Create a new club
 const createClub = async (payload: IClub & { club_members: string[] }) => {
@@ -467,51 +465,6 @@ const getClubCloseStatus = async (clubId: string, userId: string) => {
   return { message: !!closeRequest ? 'Close request already exists' : 'No close request found', isRequestedToClose: !!closeRequest };
 };
 
-
-
-const getNotificationSettings = async (clubId: string, userId: string) => {
-  const club = await Club.findById(clubId).lean()
-  if (!club) throw new Error('Club not found');
-
-  // Populate the ClubNotificationSettings document referenced in the club
-  const notificationSettings = await ClubNotificationSettings.findById(club.notification_settings).lean()
-
-  return { message: 'Notification settings retrieved successfully', data: notificationSettings };
-};
-
-
-const updateNotificationSettings = async (
-  clubId: string,
-  userId: string,
-  notificationSettings: IClubNotificationSettings
-) => {
-  const club = await Club.findById(clubId).lean();
-  if (!club) throw new Error('Club not found');
-
-  // Verify caller is a club manager
-  const membership = await ClubMember.findOne({
-    club: clubId,
-    user: userId,
-  }).lean();
-  if (!membership || membership.role !== CLUB_ROLE.CLUB_MANAGER) {
-    throw new Error('Only club managers can update notification settings');
-  }
-
-  // Update the referenced ClubNotificationSettings document
-  const updated = await ClubNotificationSettings.findByIdAndUpdate(
-    club.notification_settings,
-    notificationSettings,
-    { new: true, runValidators: true }
-  ).lean();
-
-  if (!updated) throw new Error('Notification settings not found');
-
-  return {
-    message: 'Notification settings updated successfully',
-    data: updated,
-  };
-};
-
 export const ClubService = {
   createClub,
   getAllClubs,
@@ -526,7 +479,5 @@ export const ClubService = {
   leaveClub,
   isLastMember,
   createCloseClubRequest,
-  getClubCloseStatus,
-  getNotificationSettings,
-  updateNotificationSettings
+  getClubCloseStatus
 };

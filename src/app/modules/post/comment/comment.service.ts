@@ -4,10 +4,11 @@ import QueryBuilder from '../../../builder/QueryBuilder';
 import { Post } from '../post.model';
 import { IComment } from './comment.interface';
 import { Comment } from './comment.model';
+import { createNotification } from './comment.notificaiton.service';
+import { Notification } from '../../notification/notification.mode';
 
 // Create a new comment
 const createComment = async (payload: IComment) => {
-  console.log(payload);
   const post = await Post.findById(payload.post);
   if (!post) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Post id is not valid');
@@ -23,6 +24,13 @@ const createComment = async (payload: IComment) => {
   }
 
   const comment = await Comment.create(payload);
+  // SEND NOTIFICATION
+  createNotification({
+    sender: payload.creator.toString(),
+    refId: payload.post.toString(),
+    deleteReferenceId:comment._id,
+    receiver:(post as any).creator.toString(),
+  })
   return comment;
 };
 
@@ -64,11 +72,13 @@ const findById = async (id: string) => {
 };
 
 // Delete a comment by ID
-const deleteComment = async (id: string) => {
+const deleteComment = async (id: string,userId:string) => {
   const deletedComment = await Comment.findByIdAndDelete(id);
   if (!deletedComment) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Comment not found');
   }
+    Notification.deleteOne({ deleteReferenceId: deletedComment._id, sender: userId }).exec();
+  
   return deletedComment;
 };
 
@@ -76,14 +86,14 @@ const getALlCommentsByPost = async (
   postId: string,
   query: Record<string, unknown>
 ) => {
-  const userQuery = new QueryBuilder(Comment.find(), query)
+  const userQuery = new QueryBuilder(Comment.find({post:postId}), query)
     .paginate()
     // .search(userSearchableField)
     .fields()
     .filter()
     .sort();
 
-  const result = await userQuery.modelQuery.populate('creator');
+  const result = await userQuery.modelQuery.populate('creator', 'profile.username profile.firstName profile.lastName profile.image');
 
   const pagination = await userQuery.getPaginationInfo();
   return {

@@ -67,4 +67,19 @@ router
     UserController.getFollowingList
   );
 
+router
+  .route('/notification-settings')
+  .get(
+    auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+    UserController.getAllNotificationSettings
+  );
+
+router
+  .route('/notification-settings')
+  .patch(
+    auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+    UserController.updateNotificationSettings
+  );
+
+
 export const UserRoutes = router;

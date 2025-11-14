@@ -5,6 +5,7 @@ import config from '../../../config';
 import { USER_ROLES } from '../../../enums/user';
 import ApiError from '../../../errors/ApiError';
 import { IUser, UserModel } from './user.interface';
+import { UserNotificationSettings } from './notificaiton_settings/notification_settings.model';
 
 const profile = {
   firstName: {
@@ -95,13 +96,18 @@ const userSchema = new Schema<IUser, UserModel>(
     token: {
       type: String,
     },
+    notification_settings: {
+      type: Schema.Types.ObjectId,
+      ref: 'UserNotificationSettings',
+      default: null,
+    },
     connected_account_id: {
       type: String,
-      select:0
+      select: 0,
     },
     stripe_connected_link: {
       type: String,
-      select:0
+      select: 0,
     },
   },
   { timestamps: true }
@@ -143,6 +149,11 @@ userSchema.pre('save', async function (next) {
     this.password,
     Number(config.bcrypt_salt_rounds)
   );
+
+  if (!this.notification_settings) {
+    const createdSettings = await UserNotificationSettings.create({});
+    this.notification_settings = createdSettings._id;
+  }
 
   next();
 });

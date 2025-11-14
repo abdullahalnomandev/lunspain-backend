@@ -188,6 +188,39 @@ const getFollowingList = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getAllNotificationSettings = catchAsync(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+
+    const result = await UserService.getAllNotificationSettingsFromDB(userId);
+
+    sendResponse(res, {
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: 'Notification settings retrieved successfully',
+      data: result,
+    });
+  }
+);
+
+const updateNotificationSettings = catchAsync(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+
+    const result = await UserService.updateNotificationSettingsFromDB(
+      userId,
+      req.body
+    );
+
+    sendResponse(res, {
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: 'Notification settings updated successfully',
+      data: result,
+    });
+  }
+);
+
 export const UserController = {
   createUser,
   getUserProfile,
@@ -199,4 +232,6 @@ export const UserController = {
   getUserProfileById,
   getFollowerList,
   getFollowingList,
+  getAllNotificationSettings,
+  updateNotificationSettings,
 };
