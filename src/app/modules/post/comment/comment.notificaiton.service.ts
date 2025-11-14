@@ -5,11 +5,13 @@ import { IUserNotificationSettings } from '../../user/notificaiton_settings/noti
 import { NOTIFICATION_OPTION } from '../../user/notificaiton_settings/notification_settings.constant';
 import { User } from '../../user/user.model';
 
-interface IProps {
+export interface INotificationEventProps {
   sender: string;
   refId: string;
   deleteReferenceId: string | Types.ObjectId;
   receiver: string;
+  type?: 'comment' | 'like';
+  taggedUsers?: Types.ObjectId[];
 }
 
 export const createNotification = async ({
@@ -17,29 +19,31 @@ export const createNotification = async ({
   refId,
   deleteReferenceId,
   receiver,
-}: IProps) => {
+}: INotificationEventProps) => {
 
-  const userNotificationSettings = await User.findById( receiver, '-_id notification_settings' ).populate('notification_settings').lean();
+  const userNotificationSettings = await User.findById(receiver, '-_id notification_settings')
+    .populate('notification_settings')
+    .lean();
+
   const { comments_on_your_posts } = userNotificationSettings?.notification_settings as IUserNotificationSettings;
 
-  const conditions = [
-    comments_on_your_posts === NOTIFICATION_OPTION.FROM_EVERYONE,
-    comments_on_your_posts === NOTIFICATION_OPTION.FROM_PROFILES_I_FOLLOW &&!!(await Follower.exists({following: sender,follower: receiver})
-    .lean()),
-  ];
+  const shouldSend = comments_on_your_posts === NOTIFICATION_OPTION.FROM_EVERYONE ||
+  (comments_on_your_posts === NOTIFICATION_OPTION.FROM_PROFILES_I_FOLLOW &&
+    !!(await Follower.exists({
+      following: sender,
+      follower: receiver,
+    }).lean()));
 
-  conditions.map(condition => {
-    console.log({condition})
-    if (condition) {
-      sendNotification(condition, {
-        receiver,
-        sender,
-        title: 'Comment on your post',
-        refId,
-        deleteReferenceId,
-        path: '/user/post/comment',
-      });
-    }
-  });
 
+  if (shouldSend) {
+    sendNotification(true, {
+      receiver,
+      sender,
+      title: 'A user commented on your post',
+      refId,
+      deleteReferenceId,
+      path: '/user/post/comment',
+    });
+  }
 };
+

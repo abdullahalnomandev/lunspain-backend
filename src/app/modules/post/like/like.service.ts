@@ -8,20 +8,33 @@ import { NOTIFICATION_OPTION } from '../../user/notificaiton_settings/notificati
 import { Follower } from '../../user/follower/follower.model';
 import { sendNotification } from '../../../../shared/sendNotification';
 import { IUserNotificationSettings } from '../../user/notificaiton_settings/notifation_sttings.interface';
+import { createNotificationThatYouAreTagged } from '../post.util';
 
 const createLike = async (postId: string, userId: string) => {
   const like = await Like.create({ post: postId, user: userId });
-  await like.populate('post', 'creator');
+  await like.populate('post', 'creator tag_user');
 
   // NOTIFICATION SECTION
   const creator = (like.post as any).creator;
-  const userNotificationSettings = await User.findById(  creator, '-_id notification_settings')
+  const tagUsers = (like.post as any).tag_user;
+  const userNotificationSettings = await User.findById(
+    creator,
+    '-_id notification_settings'
+  )
     .populate('notification_settings')
     .lean();
 
-  const { likes_on_your_posts } = userNotificationSettings?.notification_settings as IUserNotificationSettings;
+  const { likes_on_your_posts } =
+    userNotificationSettings?.notification_settings as IUserNotificationSettings;
+  const shouldSend =
+    likes_on_your_posts === NOTIFICATION_OPTION.FROM_EVERYONE ||
+    (likes_on_your_posts === NOTIFICATION_OPTION.FROM_PROFILES_I_FOLLOW &&
+      !!(await Follower.exists({
+        following: userId,
+        follower: creator,
+      }).lean()));
 
-  sendNotification(likes_on_your_posts === NOTIFICATION_OPTION.FROM_EVERYONE, {
+  sendNotification(shouldSend, {
     receiver: creator,
     sender: userId,
     title: 'Liked on your post',
@@ -30,21 +43,14 @@ const createLike = async (postId: string, userId: string) => {
     path: '/user/post/like',
   });
 
-  sendNotification(
-    likes_on_your_posts === NOTIFICATION_OPTION.FROM_PROFILES_I_FOLLOW &&
-      !!(await Follower.exists({
-        following: userId,
-        follower: creator,
-      }).lean()),
-    {
-      receiver: creator,
-      sender: userId,
-      title: 'Liked on your post',
-      refId: postId,
-      deleteReferenceId: like._id,
-      path: '/user/post/like',
-    }
-  );
+  createNotificationThatYouAreTagged({
+    sender: userId,
+    refId: postId,
+    deleteReferenceId: like._id,
+    receiver: creator,
+    type: 'like',
+    taggedUsers: tagUsers,
+  });
 
   //NOTIFICATION SECTION END
 
@@ -52,17 +58,23 @@ const createLike = async (postId: string, userId: string) => {
 };
 
 const deleteLike = async (postId: string, userId: string) => {
-  const like = await Like.findOneAndDelete({ post: postId, user: userId }, {
-    new: true,
-  });
+  const like = await Like.findOneAndDelete(
+    { post: postId, user: userId },
+    {
+      new: true,
+    }
+  );
 
-  console.log({like:like?._id,userId})
+  console.log({ like: like?._id, userId });
 
   if (!like) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Like not found');
   }
 
-  Notification.deleteOne({ deleteReferenceId: like._id, sender: userId }).exec();
+  Notification.deleteOne({
+    deleteReferenceId: like._id,
+    sender: userId,
+  }).exec();
 
   return like;
 };

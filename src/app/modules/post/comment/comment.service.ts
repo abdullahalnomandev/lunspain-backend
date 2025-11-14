@@ -6,6 +6,7 @@ import { IComment } from './comment.interface';
 import { Comment } from './comment.model';
 import { createNotification } from './comment.notificaiton.service';
 import { Notification } from '../../notification/notification.mode';
+import { createNotificationThatYouAreTagged } from '../post.util';
 
 // Create a new comment
 const createComment = async (payload: IComment) => {
@@ -30,6 +31,15 @@ const createComment = async (payload: IComment) => {
     refId: payload.post.toString(),
     deleteReferenceId:comment._id,
     receiver:(post as any).creator.toString(),
+  })
+
+  createNotificationThatYouAreTagged({
+    sender: payload.creator.toString(),
+    refId: payload.post.toString(),
+    deleteReferenceId:comment._id,
+    receiver:(post as any).creator.toString(),
+    type:'comment',
+    taggedUsers : post.tag_user
   })
   return comment;
 };
