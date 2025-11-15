@@ -1,6 +1,6 @@
 node_modules
 .env
-fcmServiceAccountKey
+fcmServiceAccountKey.json
 
 /winston
 /uploads
