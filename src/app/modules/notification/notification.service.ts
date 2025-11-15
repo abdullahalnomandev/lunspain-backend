@@ -27,8 +27,8 @@ const getMyNotifications = async (userId: string, query: Record<string, any>) =>
 };
 
 const markAsSeen = async (userId: string, notificationId: string) => {
-  const notification = await Notification.findOneAndUpdate(
-    { _id: notificationId, recipient: userId },
+  const notification = await Notification.findByIdAndUpdate(
+    notificationId,
     { seen: true },
     { new: true }
   ).lean();

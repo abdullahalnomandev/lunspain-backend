@@ -9,6 +9,7 @@ import { Follower } from '../../user/follower/follower.model';
 import { sendNotification } from '../../../../shared/sendNotification';
 import { IUserNotificationSettings } from '../../user/notificaiton_settings/notifation_sttings.interface';
 import { createNotificationThatYouAreTagged } from '../post.util';
+import {messaging} from 'firebase-admin';
 
 const createLike = async (postId: string, userId: string) => {
   const like = await Like.create({ post: postId, user: userId });
@@ -23,7 +24,6 @@ const createLike = async (postId: string, userId: string) => {
   )
     .populate('notification_settings')
     .lean();
-
   const { likes_on_your_posts } =
     userNotificationSettings?.notification_settings as IUserNotificationSettings;
   const shouldSend =
@@ -53,6 +53,16 @@ const createLike = async (postId: string, userId: string) => {
   });
 
   //NOTIFICATION SECTION END
+  // PUSH NOTIFICATION
+  const registrationToken = 'YOUR_REGISTRATION_TOKEN';
+
+const message = {
+  like,
+  token: registrationToken
+};
+
+  const msg = messaging().send(message);
+
 
   return like;
 };

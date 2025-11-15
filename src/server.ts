@@ -6,6 +6,7 @@ import config from './config';
 import { seedSuperAdmin } from './DB/seedAdmin';
 import { socketHelper } from './helpers/socketHelper';
 import { errorLogger, logger } from './shared/logger';
+import { sendBirthdayNotification } from './app/modules/user/user.util';
 
 //uncaught exception
 process.on('uncaughtException', error => {
@@ -19,7 +20,9 @@ async function main() {
     console.log(config.database_url);
     mongoose.connect(config.database_url as string);
     logger.info(colors.green('🚀 Database connected successfully'));
+    sendBirthdayNotification()
 
+    
     //Seed Super Admin after database connection is successful
     await seedSuperAdmin();
 
