@@ -24,11 +24,8 @@ const createLike = async (postId: string, userId: string) => {
   )
     .populate('notification_settings')
     .lean();
-  const { likes_on_your_posts } =
-    userNotificationSettings?.notification_settings as IUserNotificationSettings;
-  const shouldSend =
-    likes_on_your_posts === NOTIFICATION_OPTION.FROM_EVERYONE ||
-    (likes_on_your_posts === NOTIFICATION_OPTION.FROM_PROFILES_I_FOLLOW &&
+  const { likes_on_your_posts } = userNotificationSettings?.notification_settings as IUserNotificationSettings;
+  const shouldSend = likes_on_your_posts === NOTIFICATION_OPTION.FROM_EVERYONE || (likes_on_your_posts === NOTIFICATION_OPTION.FROM_PROFILES_I_FOLLOW &&
       !!(await Follower.exists({
         following: userId,
         follower: creator,
@@ -54,14 +51,14 @@ const createLike = async (postId: string, userId: string) => {
 
   //NOTIFICATION SECTION END
   // PUSH NOTIFICATION
-  const registrationToken = 'YOUR_REGISTRATION_TOKEN';
+//   const registrationToken = 'YOUR_REGISTRATION_TOKEN';
 
-const message = {
-  like,
-  token: registrationToken
-};
+// const message = {
+//   like,
+//   token: registrationToken
+// };
 
-  const msg = messaging().send(message);
+//   const msg = messaging().send(message);
 
 
   return like;

@@ -325,14 +325,18 @@ const getALlTypeOfpost = async (
   if (postType === POST_SERCH_TYPE.PHOTO || postType === POST_SERCH_TYPE.VIDEO || postType === POST_SERCH_TYPE.SKILL) {
     posts = await Promise.all(
       posts.map(async (post: any) => {
-        const [commentOfPost, likeOfPost] = await Promise.all([
-          Comment.countDocuments({ post: post._id }).lean(),
-          Like.countDocuments({ post: post._id }).lean(),
+        console.log({post:post._id.toString(),userId})
+        const [commentOfPost, likeOfPost, isLiked] = await Promise.all([
+          Comment.countDocuments({ post: post._id }).lean().exec(),
+          Like.countDocuments({ post: post._id }).lean().exec(),
+          Like.exists({ user: userId, post: post._id}).lean().exec(),
         ]);
         return {
           ...post.toObject(),
           commentOfPost,
-          likeOfPost
+          likeOfPost,
+          isCreator: post.creator?._id.toString() === userId,
+          hasLiked: !!isLiked
         };
       })
     );

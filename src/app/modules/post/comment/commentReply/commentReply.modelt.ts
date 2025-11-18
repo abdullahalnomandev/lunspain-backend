@@ -1,10 +1,10 @@
 import { model, Schema, Types } from 'mongoose';
-import { CommentModel, IComment } from './comment.interface';
-import { COMMENT_REACTION } from './comment.constant';
+import { CommentReplyModel, ICommentReply } from './commentReply.interface';
+import { CommentModel } from '../comment.interface';
 
-const commentSchema = new Schema<IComment, CommentModel>(
+const commentReplySchema = new Schema<ICommentReply, CommentReplyModel>(
   {
-    post: {
+    comment: {
       type: Schema.Types.ObjectId,
       ref: 'Post',
       required: true,
@@ -25,4 +25,4 @@ const commentSchema = new Schema<IComment, CommentModel>(
   { timestamps: true }
 );
 
-export const Comment = model<IComment, CommentModel>('Comment', commentSchema);
+export const CommentReply = model<ICommentReply, CommentModel>('CommentReply', commentReplySchema);

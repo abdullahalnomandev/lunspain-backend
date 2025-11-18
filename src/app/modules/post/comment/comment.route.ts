@@ -26,6 +26,34 @@ router
     auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
     CommentController.deleteComment
   )
-  .get(CommentController.getAllComments);
+  .get(
+    auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+    CommentController.getAllComments);
+
+
+
+router
+  .route('/reply/:id')
+  .post(
+    auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+    fileUploadHandler(),
+    CommentController.creplyComment
+  )
+  .get(
+    auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+    CommentController.getAllCommentReply
+  )
+  .delete(
+    auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+    CommentController.deleteCommentReply
+  );
+
+
+router.post(
+  '/like/toggle/:commentId',
+  auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  CommentController.togglCommentLike
+);
+
 
 export const CommentRoutes = router;

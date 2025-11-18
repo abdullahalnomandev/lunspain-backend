@@ -10,12 +10,6 @@ export type IComment = {
   image?: string;
   createdAt?: Date;
   updatedAt?: Date;
-  likes?: [
-    {
-      react_type: COMMENT_REACTION;
-      user: Types.ObjectId;
-    }
-  ];
 };
 
 export type CommentModel = Model<IComment>;
