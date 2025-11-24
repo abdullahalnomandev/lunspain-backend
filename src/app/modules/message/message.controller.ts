@@ -2,14 +2,14 @@ import { NextFunction, Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
-import { getSingleFilePath } from '../../../shared/getFilePath';
+import { getMultipleFilesPath, getSingleFilePath } from '../../../shared/getFilePath';
 import { MesdsageService } from './message.service';
 
 const sendMessage = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const sender = (req.user as any)?.id;
 
-    let image = getSingleFilePath(req.files, 'image');
+    let image = getMultipleFilesPath(req.files, 'image');
     const data = {
       sender,
       image,

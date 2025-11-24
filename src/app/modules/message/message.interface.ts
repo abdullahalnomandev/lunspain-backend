@@ -5,7 +5,7 @@ export type IMessage = {
     receiver: mongoose.Types.ObjectId;
     conversation: mongoose.Types.ObjectId;
     text?: string;
-    image?: string;
+    image?: string[];
 }
 
 export type IMessageModel = Model<IMessage, Record<string, unknown>>

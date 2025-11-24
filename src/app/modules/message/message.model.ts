@@ -22,7 +22,7 @@ const messageSchema = new Schema<IMessage, IMessageModel>(
             type: String,
         },
         image: {
-            type: String,
+            type: [String],
         }
     },
     { timestamps: true }

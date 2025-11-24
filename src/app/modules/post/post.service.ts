@@ -26,7 +26,6 @@ import { Follower } from '../user/follower/follower.model';
 
 //Create a new club
 const createPost = async (payload: IPOST) => {
-  console.log('payload', payload);
 
   if (payload.post_type === POST_TYPE.PHOTO && !payload.image) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Photo is required');
@@ -141,7 +140,6 @@ const updatePost = async (id: string, payload: Partial<IPOST>) => {
 };
 
 const getAllMyDrafts = async (userId: string) => {
-  console.log({ userId });
   const drafts = await Post.find({
     creator: userId,
     post_type: POST_TYPE.DRAFTS,
@@ -249,36 +247,33 @@ const getAllPosts = async (query: Record<string, any>, userId: string) => {
   };
 };
 
-
 const getALlTypeOfpost = async (
   postType: string,
   userId: string,
   query: Record<string, any>
 ) => {
-
   let buildQuery: any;
   let searchableField: string[];
 
   switch (postType) {
     case POST_SERCH_TYPE.PHOTO:
-      buildQuery = Post.find({ post_type: POST_TYPE.PHOTO });
+      buildQuery = Post.find({ post_type: POST_TYPE.PHOTO }).populate('creator','profile.image profile.username');
       searchableField = postSearchableField;
       break;
     case POST_SERCH_TYPE.CLUB:
-
-      buildQuery = Club.find();
+      buildQuery = Club.find().populate('club_creator','profile.image profile.username');
       searchableField = clubSearchableField;
       break;
     case POST_SERCH_TYPE.USER:
-      buildQuery = User.find({ _id: { $ne: userId } });
+      buildQuery = User.find({ _id: { $ne: userId } }).populate('profile.image profile.username');
       searchableField = userSearchableField;
       break;
     case POST_SERCH_TYPE.VIDEO:
-      buildQuery = Post.find({ post_type: POST_TYPE.VIDEO });
+      buildQuery = Post.find({ post_type: POST_TYPE.VIDEO }).populate('creator','profile.image profile.username');
       searchableField = postSearchableField;
       break;
     case POST_SERCH_TYPE.SKILL:
-      buildQuery = Post.find();
+      buildQuery = Post.find().populate('creator','profile.image profile.username');
       searchableField = postSearchableField;
       break;
     default:
@@ -288,8 +283,6 @@ const getALlTypeOfpost = async (
       );
   }
 
-
-
   const postQueryBuilder = new QueryBuilder(buildQuery, query)
     .paginate()
     .search(searchableField)
@@ -297,7 +290,7 @@ const getALlTypeOfpost = async (
     .filter()
     .sort();
 
-  let posts = await postQueryBuilder.modelQuery.populate('creator','profile.image profile.username');
+  let posts = await postQueryBuilder.modelQuery;
 
   if (postType === POST_SERCH_TYPE.CLUB) {
     posts = await Promise.all(
@@ -316,27 +309,38 @@ const getALlTypeOfpost = async (
         const isFollowed = await Follower.findOne({
           follower: userId,
           following: user?._id,
-        });;
+        });
         return { ...user.toObject(), isFollowed: !!isFollowed };
       })
     );
   }
 
-  if (postType === POST_SERCH_TYPE.PHOTO || postType === POST_SERCH_TYPE.VIDEO || postType === POST_SERCH_TYPE.SKILL) {
+  if (
+    postType === POST_SERCH_TYPE.PHOTO ||
+    postType === POST_SERCH_TYPE.VIDEO ||
+    postType === POST_SERCH_TYPE.SKILL
+  ) {
     posts = await Promise.all(
       posts.map(async (post: any) => {
-        console.log({post:post._id.toString(),userId})
+
         const [commentOfPost, likeOfPost, isLiked] = await Promise.all([
           Comment.countDocuments({ post: post._id }).lean().exec(),
           Like.countDocuments({ post: post._id }).lean().exec(),
-          Like.exists({ user: userId, post: post._id}).lean().exec(),
+          Like.exists({ user: userId, post: post._id }).lean().exec(),
         ]);
+
+        const isCreator = post?.creator?._id?.toString() === userId;
+        const createdAt = new Date(post.createdAt).getTime();
+        const now = Date.now();
+        const thirtyMinutes = 30 * 60 * 1000;
+        const isEditable = isCreator && now - createdAt <= thirtyMinutes;
         return {
           ...post.toObject(),
           commentOfPost,
           likeOfPost,
           isCreator: post.creator?._id.toString() === userId,
-          hasLiked: !!isLiked
+          hasLiked: !!isLiked,
+          editable: isEditable
         };
       })
     );
@@ -350,7 +354,6 @@ const getALlTypeOfpost = async (
   };
 };
 
-
 dayjs.extend(isToday);
 dayjs.extend(isYesterday);
 
@@ -358,10 +361,7 @@ const getALlUserLikedPost = async (
   userId: string,
   query: Record<string, any>
 ) => {
-  const userQuery = new QueryBuilder(
-    Like.find({ user: userId }),
-    query
-  )
+  const userQuery = new QueryBuilder(Like.find({ user: userId }), query)
     .paginate()
     .fields()
     .filter()
@@ -385,7 +385,8 @@ const getALlUserLikedPost = async (
 
     if (createdAt.isToday()) key = 'today';
     else if (createdAt.isYesterday()) key = 'yesterday';
-    else if (createdAt.isAfter(dayjs().subtract(2, 'day'))) key = 'two_days_ago';
+    else if (createdAt.isAfter(dayjs().subtract(2, 'day')))
+      key = 'two_days_ago';
     else if (createdAt.isAfter(dayjs().subtract(7, 'day'))) key = 'this_week';
     else if (createdAt.isAfter(dayjs().startOf('month'))) key = 'this_month';
     else if (createdAt.isAfter(dayjs().startOf('year'))) key = 'this_year';
@@ -412,5 +413,5 @@ export const PostService = {
   findById,
   getAllPosts,
   getALlTypeOfpost,
-  getALlUserLikedPost
+  getALlUserLikedPost,
 };
