@@ -7,6 +7,7 @@ import { LikeService } from './like.service';
 const toggleLike = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { postId } = req.params;
+    const { fcmToken } = req.query;
     const userId = req.user?.id;
 
     // Check if user has already liked the post
@@ -19,7 +20,7 @@ const toggleLike = catchAsync(
       result = await LikeService.deleteLike(postId, userId);
       message = 'Post unliked successfully';
     } else {
-      result = await LikeService.createLike(postId, userId);
+      result = await LikeService.createLike(postId, userId,fcmToken as string);
       message = 'Post liked successfully';
     }
 

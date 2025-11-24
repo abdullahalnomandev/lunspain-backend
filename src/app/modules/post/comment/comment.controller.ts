@@ -9,6 +9,7 @@ import { CommentService } from './comment.service';
 const createComment = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const user = req.user;
+    const { fcmToken } = req.query;
     let image = getSingleFilePath(req.files, 'image');
 
     const data: any = {
@@ -19,7 +20,7 @@ const createComment = catchAsync(
     if (image && image !== 'undefined') {
       data.image = image;
     }
-    const result = await CommentService.createComment(data);
+    const result = await CommentService.createComment(data,fcmToken as string);
 
     sendResponse(res, {
       success: true,

@@ -251,7 +251,7 @@ const getAllUsers = async (query: Record<string, any>) => {
 //     select: "-active",
 //   },
 // })
-export const toggleFollowUser = async (userId: string, targetId: string) => {
+export const toggleFollowUser = async (userId: string, targetId: string,fcmToken:string) => {
   if (userId === targetId) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'You cannot follow yourself');
   }
@@ -287,6 +287,7 @@ export const toggleFollowUser = async (userId: string, targetId: string) => {
         refId: userId,
         deleteReferenceId: follow._id,
         path: '/follow/user',
+        fcmToken
       }
     );
 

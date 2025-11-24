@@ -12,6 +12,7 @@ export interface INotificationEventProps {
   receiver: string;
   type?: 'comment' | 'like';
   taggedUsers?: Types.ObjectId[];
+  fcmToken?:string;
 }
 
 export const createNotification = async ({
@@ -19,6 +20,7 @@ export const createNotification = async ({
   refId,
   deleteReferenceId,
   receiver,
+  fcmToken
 }: INotificationEventProps) => {
 
   const userNotificationSettings = await User.findById(receiver, '-_id notification_settings')
@@ -43,6 +45,7 @@ export const createNotification = async ({
       refId,
       deleteReferenceId,
       path: '/user/post/comment',
+      fcmToken
     });
   }
 };

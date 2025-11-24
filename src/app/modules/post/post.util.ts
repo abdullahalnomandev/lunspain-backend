@@ -45,7 +45,7 @@ export const createNotificationThatYouAreTagged = async ({
       } on a post you are tagged in`,
       refId,
       deleteReferenceId,
-      path: `/user/post/${type}`,
+      path: `/user/post/${type}`
     });
   }
 };

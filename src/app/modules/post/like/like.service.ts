@@ -9,27 +9,23 @@ import { Follower } from '../../user/follower/follower.model';
 import { sendNotification } from '../../../../shared/sendNotification';
 import { IUserNotificationSettings } from '../../user/notificaiton_settings/notifation_sttings.interface';
 import { createNotificationThatYouAreTagged } from '../post.util';
-import {messaging} from 'firebase-admin';
-
-const createLike = async (postId: string, userId: string) => {
+const createLike = async (postId: string, userId: string, fcmToken: string) => {
   const like = await Like.create({ post: postId, user: userId });
   await like.populate('post', 'creator tag_user');
 
   // NOTIFICATION SECTION
   const creator = (like.post as any).creator;
   const tagUsers = (like.post as any).tag_user;
-  const userNotificationSettings = await User.findById(
-    creator,
-    '-_id notification_settings'
-  )
+  const userNotificationSettings = await User.findById(creator, '-_id notification_settings')
     .populate('notification_settings')
     .lean();
   const { likes_on_your_posts } = userNotificationSettings?.notification_settings as IUserNotificationSettings;
   const shouldSend = likes_on_your_posts === NOTIFICATION_OPTION.FROM_EVERYONE || (likes_on_your_posts === NOTIFICATION_OPTION.FROM_PROFILES_I_FOLLOW &&
-      !!(await Follower.exists({
-        following: userId,
-        follower: creator,
-      }).lean()));
+    !!(await Follower.exists({
+      following: userId,
+      follower: creator,
+    }).lean()));
+
 
   sendNotification(shouldSend, {
     receiver: creator,
@@ -38,6 +34,7 @@ const createLike = async (postId: string, userId: string) => {
     refId: postId,
     deleteReferenceId: like._id,
     path: '/user/post/like',
+    fcmToken
   });
 
   createNotificationThatYouAreTagged({
@@ -46,19 +43,10 @@ const createLike = async (postId: string, userId: string) => {
     deleteReferenceId: like._id,
     receiver: creator,
     type: 'like',
-    taggedUsers: tagUsers,
+    taggedUsers: tagUsers
   });
 
   //NOTIFICATION SECTION END
-  // PUSH NOTIFICATION
-//   const registrationToken = 'YOUR_REGISTRATION_TOKEN';
-
-// const message = {
-//   like,
-//   token: registrationToken
-// };
-
-//   const msg = messaging().send(message);
 
 
   return like;

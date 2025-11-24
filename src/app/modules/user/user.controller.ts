@@ -105,8 +105,10 @@ const updateSkypeProfile = catchAsync(async (req: Request, res: Response) => {
 const toggleFollowUser = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user?.id;
   const targetId = req.params.id;
+  const { fcmToken } = req.query;
 
-  const result = await UserService.toggleFollowUser(userId, targetId);
+
+  const result = await UserService.toggleFollowUser(userId, targetId,fcmToken as string);
 
   sendResponse(res, {
     success: true,

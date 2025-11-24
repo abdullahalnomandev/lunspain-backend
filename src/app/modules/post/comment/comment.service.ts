@@ -12,7 +12,7 @@ import { CommentReply } from './commentReply/commentReply.modelt';
 import { CommentLike } from './commentLike/commentLike.modelt';
 
 // Create a new comment
-const createComment = async (payload: IComment) => {
+const createComment = async (payload: IComment,fcmToken:string) => {
   const post = await Post.findById(payload.post);
   if (!post) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Post id is not valid');
@@ -34,6 +34,7 @@ const createComment = async (payload: IComment) => {
     refId: payload.post.toString(),
     deleteReferenceId:comment._id,
     receiver:(post as any).creator.toString(),
+    fcmToken
   })
 
   createNotificationThatYouAreTagged({
