@@ -3,6 +3,7 @@ import { CLUB_PERIOD_TYPE } from './club.constant';
 
 export type IClub = {
   name: string;
+  email?: string;
   description?: string;
   website?: string;
   address?: string;

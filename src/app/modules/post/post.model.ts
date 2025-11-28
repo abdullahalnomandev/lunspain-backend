@@ -4,6 +4,9 @@ import { IPOST, IPostModel } from './post.interface';
 
 const postSchema = new Schema<IPOST, IPostModel>(
   {
+    title: {
+      type: String,
+    },
     description: {
       type: String,
     },

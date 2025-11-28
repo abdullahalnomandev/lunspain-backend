@@ -9,6 +9,10 @@ const clubSchema = new Schema<IClub, ClubModel>(
       required: true,
       trim: true,
     },
+    email: {
+      type: String,
+      trim: true,
+    },
     description: {
       type: String,
       trim: true,

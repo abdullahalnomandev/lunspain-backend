@@ -2,6 +2,7 @@ import { Model, Types } from 'mongoose';
 import { CREATOR_TYPE, POST_TYPE } from './post.constant';
 
 export type IPOST = {
+  title?: string;
   description?: string;
   image?: string;
   media?: string;

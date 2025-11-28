@@ -86,7 +86,12 @@ const loginUserFromDB = async (payload: ILoginData) => {
     config.jwt.jwt_expire_in as string
   );
 
-  return { data: { accessToken: createToken } };
+  // Remove password from response
+  const userObj = userInfo.toObject ? userInfo.toObject() : { ...userInfo };
+  if ('password' in userObj) delete (userObj as any)?.password;
+  if ('token' in userObj) delete (userObj as any)?.token;
+
+  return { data: { data: userObj, accessToken: createToken } };
 };
 
 //forget password

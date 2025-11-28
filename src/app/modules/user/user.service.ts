@@ -69,7 +69,7 @@ const createUserToDB = async (
   if (isValid && createUser && payload.auth_provider === 'local') {
     const createAccountTemplate = emailTemplate.createAccount({
       email: createUser.email,
-      verify_url: `${config.front_end_app_url}?token=${payload.token}`,
+      verify_url: `${config.front_end_app_url}verify?token=${payload.token}`,
     });
     emailHelper.sendEmail(createAccountTemplate);
     return createUser;
@@ -152,10 +152,10 @@ const updateProfileToDB = async (
   }
 
   //unlink file here
-  if (payload.image) {
+  if (payload.image && payload.image === isExistUser.profile?.image) {
     unlinkFile(payload.image as string);
   }
-  if (payload.cover_image) {
+  if (payload.cover_image && payload.cover_image === isExistUser.profile?.cover_image) {
     unlinkFile(payload.cover_image as string);
   }
   if (!!payload.year_of_exprience) {
