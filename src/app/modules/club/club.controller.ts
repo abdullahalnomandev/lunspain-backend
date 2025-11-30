@@ -41,6 +41,8 @@ const createClub = catchAsync(
     //   });
     // }
 
+    console.log(data)
+
     const result = await ClubService.createClub(data);
 
     sendResponse(res, {

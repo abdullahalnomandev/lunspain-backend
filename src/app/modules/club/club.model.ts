@@ -54,6 +54,10 @@ const clubSchema = new Schema<IClub, ClubModel>(
       type: Boolean,
       default: true,
     },
+    enable_public_club: {
+      type: Boolean,
+      default: true,
+    },
     allow_class_cancelation: {
       type: Boolean,
       default: true,

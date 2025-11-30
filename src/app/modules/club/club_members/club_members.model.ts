@@ -23,6 +23,5 @@ const clubMemberSchema = new Schema<IClubMember, ClubMemberModel>(
   { timestamps: true }
 );
 
-clubMemberSchema.index({ club: 1, user: 1 }, { unique: true });
 
 export const ClubMember = model<IClubMember>('ClubMember', clubMemberSchema);

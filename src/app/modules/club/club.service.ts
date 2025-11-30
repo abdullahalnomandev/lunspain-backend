@@ -63,6 +63,7 @@ const createClub = async (payload: IClub & { club_members: string[] }) => {
   }
 };
 
+
 const getAllClubs = async (userId: string, query: Record<string, any>) => {
   const result = new QueryBuilder(Club.find(), query)
     .paginate()
@@ -74,29 +75,38 @@ const getAllClubs = async (userId: string, query: Record<string, any>) => {
   const clubs = await result.modelQuery.lean();
   const pagination = await result.getPaginationInfo();
 
-  const managedClubs: any[] = [];
-  const memberClubs: any[] = [];
-
-  const allMyClubs = await ClubMember.find({ user: userId })
+  // Fetch all club memberships for this user in a single query
+  const memberships = await ClubMember.find({ user: userId })
     .populate('club')
     .lean();
 
-  allMyClubs.forEach((club: any) => {
-    if (club.role === CLUB_ROLE.CLUB_MANAGER) {
-      managedClubs.push(club.club);
+  // Separate managed and member clubs
+  const managedClubs: any[] = [];
+  const memberClubs: any[] = [];
+
+  memberships.forEach(({ role, club }) => {
+    if (!club) return; // skip if club not found
+
+    if (role === CLUB_ROLE.CLUB_MANAGER) {
+      managedClubs.push(club);
     } else {
-      memberClubs.push(club.club);
+      memberClubs.push(club);
     }
   });
+
+  // Remove duplicates if somehow present (by club _id)
+  const uniqueById = (arr: any[]) =>
+    Array.from(new Map(arr.map((c) => [c._id.toString(), c])).values());
 
   return {
     pagination,
     data: {
-      managedClubs,
-      memberClubs,
+      managedClubs: uniqueById(managedClubs),
+      memberClubs: uniqueById(memberClubs),
     },
   };
 };
+
 
 //Get single club by ID
 const getSingleClub = async (id: string, userId: string) => {
@@ -150,6 +160,8 @@ const updateClub = async (
     user: userId,
   }).lean() as IClubMember;
 
+  console.log({ payload })
+
   const clubToUpdate = await Club.findById(club_id).lean();
 
   if (payload.allow_class_cancelation && payload.pre_class_cancelation) {
@@ -162,6 +174,7 @@ const updateClub = async (
       ...JSON.parse(payload.payment as any),
     }
   }
+
 
   if (payload.premium_feature) {
     payload.premium_feature = JSON.parse(payload.premium_feature as any);

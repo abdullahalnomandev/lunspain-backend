@@ -14,6 +14,7 @@ export type IClub = {
   club_specilaity: [string];
   image: string;
   cover_image: string;
+  enable_public_club:boolean;
   // Club Settings
   allow_waiting_list: boolean; // default: true
   allow_class_cancelation: boolean; // default: true
