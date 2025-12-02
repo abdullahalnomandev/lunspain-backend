@@ -89,7 +89,7 @@ const createClass = async (payload: IClass) => {
   if (repeat === REPEAT_TYPE.WEEKLY && !repeat_days_of_week)
     throw new Error('Repeat day of week is require');
 
-  if (class_mnamagers.length >= 2) {
+  if (class_mnamagers.length > 2) {
     throw new Error('You can only create a club with up to 2 members');
   }
 
