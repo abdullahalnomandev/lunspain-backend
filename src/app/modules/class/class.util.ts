@@ -230,13 +230,19 @@ export const categorizeOccurrences = async (
     else if (occDate.isAfter(endOfNextWeek)) result.afterNextWeek.push(occ);
   }
 
-  // Filter out empty arrays from the result
+  // Sort each array by date_of_class ascending
+  const sortByDateAsc = (array: Occurrence[]) =>
+    array.sort((a, b) =>
+      dayjs(a.date_of_class).isBefore(dayjs(b.date_of_class)) ? -1 : dayjs(a.date_of_class).isAfter(dayjs(b.date_of_class)) ? 1 : 0
+    );
+
+  // Filter out empty arrays from the result, and sort
   const filteredResult: any = {};
-  if (result.today.length > 0) filteredResult.today = result.today;
-  if (result.thisWeek.length > 0) filteredResult.thisWeek = result.thisWeek;
-  if (result.nextWeek.length > 0) filteredResult.nextWeek = result.nextWeek;
+  if (result.today.length > 0) filteredResult.today = sortByDateAsc(result.today);
+  if (result.thisWeek.length > 0) filteredResult.thisWeek = sortByDateAsc(result.thisWeek);
+  if (result.nextWeek.length > 0) filteredResult.nextWeek = sortByDateAsc(result.nextWeek);
   if (result.afterNextWeek.length > 0)
-    filteredResult.afterNextWeek = result.afterNextWeek;
+    filteredResult.afterNextWeek = sortByDateAsc(result.afterNextWeek);
 
   return filteredResult;
 };

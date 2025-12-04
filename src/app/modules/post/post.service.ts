@@ -202,7 +202,15 @@ const findById = async (postId: string) => {
   if (!post) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Post not found');
   }
-  return post;
+  const [commentOfPost, likeOfPost] = await Promise.all([
+    Comment.countDocuments({ post: post._id }),
+    Like.countDocuments({ post: post._id }),
+  ]);
+  return {
+    ...post,
+    commentOfPost,
+    likeOfPost,
+  };
 };
 const getAllPosts = async (query: Record<string, any>, userId: string) => {
   // Build the query with pagination, filtering, sorting, and field selection
@@ -273,7 +281,7 @@ const getALlTypeOfpost = async (
       searchableField = postSearchableField;
       break;
     case POST_SERCH_TYPE.SKILL:
-      buildQuery = Post.find().populate('creator','profile.image profile.username');
+      buildQuery = Post.find({post_type:{$ne:POST_TYPE.DRAFTS}}).populate('creator','profile.image profile.username');
       searchableField = postSearchableField;
       break;
     default:

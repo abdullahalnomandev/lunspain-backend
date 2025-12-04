@@ -21,7 +21,7 @@ export const bookClass = async (payload: IBookingClass, origin: string) => {
 
     try {
         const classInfo = await Class.findById(payload.class).lean();
-        const userInfo = await User.findById(payload.user).lean();
+        const userInfo = await User.findById(payload.user).lean().select('+connected_account_id');
         if (!userInfo) {
             throw new ApiError(StatusCodes.NOT_FOUND, 'User not found');
         }
@@ -63,13 +63,13 @@ export const bookClass = async (payload: IBookingClass, origin: string) => {
                 },
             ],
             metadata: {
-                bookingId: payload.booking_id.toString(),
+                bookingId: create_booking.booking_id.toString(),
                 customerId: userInfo._id.toString(),
             },
             payment_intent_data: {
                 application_fee_amount: Math.round(finalAmount * 0.1 * 100), // 10% fee
                 transfer_data: {
-                    destination:  String(user?.connected_account_id), // must be acct_xxx
+                    destination:  String(userInfo?.connected_account_id), // must be acct_xxx
                 },
             },
             success_url: `${origin}/api/v1/book-class-attandence/success?status=success&bookingId=${create_booking.booking_id}`,
@@ -91,10 +91,10 @@ export const bookClass = async (payload: IBookingClass, origin: string) => {
 
 const bookConfirm = async (bookingId: string, status: string, res: Response) => {
     if (status === 'success') {
-        const order = await BookingClass.findOneAndUpdate({ booking_id: bookingId }, { payment_status: PAYMENT_STATUS.PAID, attandence_status: MEMBERS_STATUS.ATTEND });
+        const order = await BookingClass.findOneAndUpdate({ booking_id: bookingId }, { payment_status: PAYMENT_STATUS.PAID, attandence_status: MEMBERS_STATUS.ATTEND }, { new: true });
         const user = await User.findById(order?.user).lean();
         if (order?.booking_id) {
-            sendBookingConfirmEmail(user?.email as string);
+            sendBookingConfirmEmail(user?.email as string, order.class.toString(), order.payment_status, order._id.toString());
         }
 
         if (order) {

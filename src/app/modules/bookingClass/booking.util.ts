@@ -7,6 +7,8 @@ import { UserCredit } from "../user/credit/user.credit.model";
 import { IBookingClass } from "./bookingClass.interface";
 import { IClub } from "../club/club.interface";
 import dayjs from 'dayjs';
+import { Class } from '../class/class.model';
+import { IClass } from '../class/class.interface';
 
 // Generate Order ID
 const findLastOrderId = async (): Promise<string | undefined> => {
@@ -33,8 +35,9 @@ export const generateOrderId = async (): Promise<string> => {
 };
 
 
-export const sendBookingConfirmEmail = (email: string) => {
-  const welcomeEmailTemplate = emailTemplate.WelcomMessageForClassBooking(email);
+export const sendBookingConfirmEmail = async (email: string, bookingId: string , booking_status: string, booking_ref_id: string) => {
+  const booking = await Class.findById(bookingId).populate('club', 'name').lean();
+  const welcomeEmailTemplate = emailTemplate.WelcomMessageForClassBooking(email, booking as IClass, booking_status, booking_ref_id);
   emailHelper.sendEmail(welcomeEmailTemplate);
 }
 
@@ -44,7 +47,8 @@ export const addCreditForCardPayment = async (
   userId: string,
   email: string,
   classBookingRefId: string,
-  startTime: string // e.g. "09:30"
+  startTime: string, // e.g. "09:30",
+  classExist:IClass
 ) => {
     // Extract and parse class date from booking ref ID (e.g. "2025-11-09_..." → "2025-11-09")
     const bookingDate = classBookingRefId.split("_")[0]; 
@@ -90,7 +94,7 @@ export const addCreditForCardPayment = async (
         await UserCredit.create({ user: userId, club: booking.club, credit: 1 });
       }
 
-      const cancelEmail = emailTemplate.MessageForCancellation(booking, email);
+      const cancelEmail = emailTemplate.MessageForCancellation(email, classExist, booking.booking_id, booking.payment_status );
       await emailHelper.sendEmail(cancelEmail);
     }
 };

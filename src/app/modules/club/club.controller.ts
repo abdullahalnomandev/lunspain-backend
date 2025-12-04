@@ -245,6 +245,23 @@ const getClubCloseStatus = catchAsync(async (req: Request, res: Response) => {
 });
 
 
+const getClubMembersByClubId = catchAsync(async (req: Request, res: Response) => {
+  const { clubId } = req.params;
+  const userId = req?.user?.id;
+  const query = req.query as Record<string, any>;
+  const result = await ClubService.getClubMembersByClubId(clubId, userId, query);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Club members retrieved successfully',
+    pagination: result.pagination,
+    data: result.data,
+  });
+
+});
+
+
 
 export const ClubController = {
   createClub,
@@ -260,5 +277,6 @@ export const ClubController = {
   leaveClub,
   isLastMember,
   createCloseClubRequest,
-  getClubCloseStatus
+  getClubCloseStatus,
+  getClubMembersByClubId
 };

@@ -44,6 +44,10 @@ router
   .post(auth(USER_ROLES.ADMIN), ClubController.addMemberToClub);
 
 router
+  .route('/members/:clubId')
+  .get(auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER), ClubController.getClubMembersByClubId);
+
+router
   .route('/:clubId/join')
   .post(
     auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),

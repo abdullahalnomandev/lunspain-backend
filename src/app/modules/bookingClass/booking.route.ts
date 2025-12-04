@@ -15,7 +15,7 @@ router
 
 
 
-router.get('/success', ClassController.orderSuccess);
+router.get('/cancel', ClassController.orderCancel);
 router.get('/success', ClassController.orderSuccess);
 
 router.get('/attandence-list/book/:class_booking_ref_id',

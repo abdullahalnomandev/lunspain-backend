@@ -113,7 +113,7 @@ const createBookingClass = async (payload: Partial<IBookingClass & { date_of_cla
     }
 
     const bookingClass = await BookingClass.create(payload);
-    sendBookingConfirmEmail(userExists.email as string);
+    sendBookingConfirmEmail(userExists.email as string, bookingClass.class.toString(), bookingClass.payment_status, bookingClass._id.toString());
     return bookingClass;
   }
 
@@ -143,7 +143,7 @@ const addToWaitingList = async (
   const [userExists, clubExists, classExists] = await Promise.all([
     User.findById(user).lean(),
     Club.findById(club).lean(),
-    Class.findById(classId, 'max_number_of_attendees date_of_class').lean(),
+    Class.findById(classId).lean().populate('club','name'),
   ]);
 
   if (!userExists) throw new ApiError(StatusCodes.NOT_FOUND, 'User not found');
@@ -219,7 +219,9 @@ const addToWaitingList = async (
   /* ------------------------------------------------------------------ */
   const template = emailTemplate.WelcomeMessageForWaitingList(
     userExists.email as string,
-    waitingEntry
+    classExists,
+    waitingEntry.booking_id
+
   );
   emailHelper.sendEmail(template);
 
@@ -336,7 +338,7 @@ const cancelAttendence = async (userId: string, classBookingRefId: string) => {
   }
 
   // Create or increase a credit if payment with card
-  await addCreditForCardPayment(club, booking, userId, userExists.email, classBookingRefId, classExists.start_time)
+  await addCreditForCardPayment(club, booking, userId, userExists.email, classBookingRefId, classExists.start_time,classExists)
 
 
 

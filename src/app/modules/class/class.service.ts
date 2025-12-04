@@ -96,8 +96,9 @@ const createClass = async (payload: IClass) => {
   class_mnamagers.push(creator as unknown as Types.ObjectId);
 
   const klass = await Class.create(payload);
+  await klass.populate('club', 'name address');
 
-  // SEND EMASILS
+  // SEND EMAILS
   const leaders = await User.find({ _id: { $in: klass.class_mnamagers } })
     .lean()
     .select('-_id email');
@@ -105,7 +106,8 @@ const createClass = async (payload: IClass) => {
 
   leaders.map(({ email }) => {
     const welcomeEmailTemplate = emailTemplate.WelcomMessageForClassCreation(
-      email as string
+      email as string,
+      klass
     );
     emailHelper.sendEmail(welcomeEmailTemplate);
   });
@@ -114,15 +116,26 @@ const createClass = async (payload: IClass) => {
 };
 
 // Get classes by club id
-const generateOccurrences = (cls: any, maxDateInput: string): Occurrence[] => {
+const generateOccurrences = (
+  cls: any,
+  startDateOfClass?: string,
+  maxDateInput?: string
+): Occurrence[] => {
   const occurrences: Occurrence[] = [];
-  const today = dayjs().startOf('day');
-  // const maxDate = dayjs().add(1, "year").endOf("day"); // cap 1 year for forever
+
+  // Determine "today" as the earliest date to consider
+  // Priority: startDateInput > today
+  const today = startDateOfClass ? dayjs(startDateOfClass).startOf('day').add(1, 'day'): dayjs().startOf('day');
+
+  // Determine maxDate as the latest date allowed
   const maxDate = maxDateInput
     ? dayjs(maxDateInput).endOf('day')
     : dayjs().add(1, 'year').endOf('day');
 
-  let current = dayjs(cls.date_of_class).startOf('day');
+  // Debug for testing
+  // console.log({ today: today.toISOString(), maxDate: maxDate.toISOString() });
+
+  let current =  dayjs(startDateOfClass ? startDateOfClass : cls.date_of_class).startOf('day');
 
   // REPEAT NONE/ONCE
   if (cls.reoccurring_class.repeat === REPEAT_TYPE.NONE) {
@@ -132,7 +145,7 @@ const generateOccurrences = (cls: any, maxDateInput: string): Occurrence[] => {
     return occurrences;
   }
 
-  const repeatUntil = cls.reoccurring_class.repeat_until; // "forever" , "until_date", "after_occurrences",
+  const repeatUntil = cls.reoccurring_class.repeat_until;
 
   // REPEAT DAILY
   if (cls.reoccurring_class.repeat === REPEAT_TYPE.DAILY) {
@@ -142,7 +155,6 @@ const generateOccurrences = (cls: any, maxDateInput: string): Occurrence[] => {
     let totalOccurrences = Infinity;
     let untilDate = maxDate;
 
-    // adjust constraints based on repeat_until logic
     if (repeatUntil === REPEAT_UNTIL.AFTER_OCCURRENCES) {
       totalOccurrences = cls.reoccurring_class.total_occurrences ?? Infinity;
     } else if (repeatUntil === REPEAT_UNTIL.UNTIL_DATE) {
@@ -169,13 +181,12 @@ const generateOccurrences = (cls: any, maxDateInput: string): Occurrence[] => {
   // REPEAT WEEKLY
   else if (cls.reoccurring_class.repeat === REPEAT_TYPE.WEEKLY) {
     const repeatEvery = cls.reoccurring_class.repeat_every || 1;
-    const repeatDays = cls.reoccurring_class.repeat_days_of_week || []; // ["monday", "wednesday"]
+    const repeatDays = cls.reoccurring_class.repeat_days_of_week || [];
 
     let count = 0;
     let totalOccurrences = Infinity;
     let untilDate = maxDate;
 
-    // adjust constraints based on repeat_until logic
     if (repeatUntil === REPEAT_UNTIL.AFTER_OCCURRENCES) {
       totalOccurrences = cls.reoccurring_class.total_occurrences ?? Infinity;
     } else if (repeatUntil === REPEAT_UNTIL.UNTIL_DATE) {
@@ -186,28 +197,25 @@ const generateOccurrences = (cls: any, maxDateInput: string): Occurrence[] => {
       untilDate = dayjs().add(1, 'year').endOf('day');
     }
 
-    // start from the class date
     let currentWeekStart = dayjs(cls.date_of_class).startOf('week');
     while (
-      (currentWeekStart.isSame(untilDate) ||
-        currentWeekStart.isBefore(untilDate)) &&
+      (currentWeekStart.isSame(untilDate) || currentWeekStart.isBefore(untilDate)) &&
       count < totalOccurrences
     ) {
       for (const dayName of repeatDays) {
-        let dayIndex = getDayIndex(dayName); // function to convert "monday" -> 1, "tuesday" -> 2, etc.
+        let dayIndex = getDayIndex(dayName);
         let current = currentWeekStart.day(dayIndex);
 
         if (
           (current.isSame(today) || current.isAfter(today)) &&
           (current.isSame(untilDate) || current.isBefore(untilDate)) &&
+          (current.isSame(maxDate) || current.isBefore(maxDate)) &&
           count < totalOccurrences
         ) {
           occurrences.push({ ...cls, date_of_class: current.toISOString() });
           count++;
         }
       }
-
-      // move to the next set of weeks
       currentWeekStart = currentWeekStart.add(repeatEvery, 'week');
     }
   }
@@ -216,14 +224,13 @@ const generateOccurrences = (cls: any, maxDateInput: string): Occurrence[] => {
   else if (cls.reoccurring_class.repeat === REPEAT_TYPE.MONTHLY) {
     const repeatEvery = cls.reoccurring_class.repeat_every || 1;
     const dayOfMonth = cls.reoccurring_class.day_of_month;
-    const periodOfMonth = cls.reoccurring_class.period_of_month; // first, second, ...
-    const periodOfDay = cls.reoccurring_class.period_of_day; // monday, tuesday, weekend, weekday, etc.
+    const periodOfMonth = cls.reoccurring_class.period_of_month;
+    const periodOfDay = cls.reoccurring_class.period_of_day;
 
     let count = 0;
     let totalOccurrences = Infinity;
     let untilDate = maxDate;
 
-    // --- handle repeat_until logic
     if (repeatUntil === REPEAT_UNTIL.AFTER_OCCURRENCES) {
       totalOccurrences = cls.reoccurring_class.total_occurrences ?? Infinity;
     } else if (repeatUntil === REPEAT_UNTIL.UNTIL_DATE) {
@@ -242,24 +249,21 @@ const generateOccurrences = (cls: any, maxDateInput: string): Occurrence[] => {
     ) {
       let nextOccurrence: dayjs.Dayjs | null = null;
 
-      // 🗓 CASE 1: specific day of month
+      // CASE 1: specific day of month
       if (dayOfMonth) {
         nextOccurrence = current.date(dayOfMonth);
-        // if day exceeds month’s total days, skip this month
         if (nextOccurrence.date() !== dayOfMonth) {
           nextOccurrence = null;
         }
       }
-
-      // 🗓 CASE 2: specific period/day (like "second Monday")
+      // CASE 2: specific period/day (like "second Monday")
       else if (periodOfMonth && periodOfDay) {
         const firstDayOfMonth = current.startOf('month');
         const lastDayOfMonth = current.endOf('month');
 
-        const targetDayIndex = getDayIndex(periodOfDay); // e.g. monday -> 1
+        const targetDayIndex = getDayIndex(periodOfDay);
         const monthDays: dayjs.Dayjs[] = [];
 
-        // gather all days in this month matching that weekday
         for (
           let d = firstDayOfMonth;
           d.isBefore(lastDayOfMonth) || d.isSame(lastDayOfMonth);
@@ -278,7 +282,7 @@ const generateOccurrences = (cls: any, maxDateInput: string): Occurrence[] => {
           nextOccurrence = monthDays[index] || null;
         }
 
-        // Support “weekday”, “weekend”, “day”
+        // Special support for "weekday", "weekend", "day"
         if (['weekday', 'weekend', 'day'].includes(periodOfDay)) {
           const isWeekend = (d: dayjs.Dayjs) => d.day() === 0 || d.day() === 6;
           const days = [];
@@ -306,11 +310,11 @@ const generateOccurrences = (cls: any, maxDateInput: string): Occurrence[] => {
         }
       }
 
-      // 🧾 Add valid occurrence
       if (
         nextOccurrence &&
         (nextOccurrence.isSame(today) || nextOccurrence.isAfter(today)) &&
-        (nextOccurrence.isSame(untilDate) || nextOccurrence.isBefore(untilDate))
+        (nextOccurrence.isSame(untilDate) || nextOccurrence.isBefore(untilDate)) &&
+        (nextOccurrence.isSame(maxDate) || nextOccurrence.isBefore(maxDate))
       ) {
         occurrences.push({
           ...cls,
@@ -319,22 +323,20 @@ const generateOccurrences = (cls: any, maxDateInput: string): Occurrence[] => {
         count++;
       }
 
-      // move to next month
       current = current.add(repeatEvery, 'month').startOf('month');
     }
   }
   // REPEAT YEARLY
   else if (cls.reoccurring_class.repeat === REPEAT_TYPE.YEARLY) {
-    const repeatEvery = cls.reoccurring_class.repeat_every || 1;
+    const repeatMonth = cls.reoccurring_class.repeat_every || 1;
     const dayOfMonth = cls.reoccurring_class.day_of_month;
-    const periodOfMonth = cls.reoccurring_class.period_of_month; // first, second, ...
-    const periodOfDay = cls.reoccurring_class.period_of_day; // monday, tuesday, etc.
+    const periodOfMonth = cls.reoccurring_class.period_of_month;
+    const periodOfDay = cls.reoccurring_class.period_of_day;
 
     let count = 0;
     let totalOccurrences = Infinity;
     let untilDate = dayjs().add(1, 'year').endOf('day');
 
-    // --- handle repeat_until logic
     if (repeatUntil === REPEAT_UNTIL.AFTER_OCCURRENCES) {
       totalOccurrences = cls.reoccurring_class.total_occurrences ?? Infinity;
     } else if (repeatUntil === REPEAT_UNTIL.UNTIL_DATE) {
@@ -345,53 +347,45 @@ const generateOccurrences = (cls: any, maxDateInput: string): Occurrence[] => {
       untilDate = dayjs().add(1, 'year').endOf('day');
     }
 
-    let current = dayjs(cls.date_of_class);
+    let base = dayjs(cls.date_of_class);
+    let startYear = base.year();
 
-    while (
-      (current.isSame(untilDate) || current.isBefore(untilDate)) &&
-      count < totalOccurrences
-    ) {
+    while (true) {
+      if (count >= totalOccurrences) break;
+
+      let year = startYear + count;
+      let currentMonth = dayjs().year(year).month(repeatMonth - 1).startOf('month');
+
+      if (currentMonth.isAfter(untilDate) || currentMonth.isAfter(maxDate)) break;
+
       let nextOccurrence: dayjs.Dayjs | null = null;
 
-      // 🗓 CASE 1: specific day of month (same month each year)
       if (dayOfMonth) {
-        nextOccurrence = current.date(dayOfMonth);
-        if (nextOccurrence.date() !== dayOfMonth) {
+        nextOccurrence = currentMonth.date(dayOfMonth);
+        if (
+          nextOccurrence.month() !== repeatMonth - 1 ||
+          nextOccurrence.date() !== dayOfMonth
+        ) {
           nextOccurrence = null;
         }
-      }
+      } else if (periodOfMonth && periodOfDay) {
+        const firstDayOfMonth = currentMonth.startOf('month');
+        const lastDayOfMonth = currentMonth.endOf('month');
+        let matchingDays: dayjs.Dayjs[] = [];
 
-      // 🗓 CASE 2: specific period/day combination (like “second Monday of the same month each year”)
-      else if (periodOfMonth && periodOfDay) {
-        const firstDayOfMonth = current.startOf('month');
-        const lastDayOfMonth = current.endOf('month');
-        const targetDayIndex = getDayIndex(periodOfDay);
-        const monthDays: dayjs.Dayjs[] = [];
-
-        // collect all same weekdays in this month
-        for (
-          let d = firstDayOfMonth;
-          d.isBefore(lastDayOfMonth) || d.isSame(lastDayOfMonth);
-          d = d.add(1, 'day')
-        ) {
-          if (d.day() === targetDayIndex) {
-            monthDays.push(d);
+        if (!['weekday', 'weekend', 'day'].includes(periodOfDay)) {
+          const targetDayIndex = getDayIndex(periodOfDay);
+          for (
+            let d = firstDayOfMonth;
+            d.isBefore(lastDayOfMonth) || d.isSame(lastDayOfMonth);
+            d = d.add(1, 'day')
+          ) {
+            if (d.day() === targetDayIndex) {
+              matchingDays.push(d);
+            }
           }
-        }
-
-        if (periodOfMonth === 'last') {
-          nextOccurrence = monthDays[monthDays.length - 1];
         } else {
-          const map = { first: 0, second: 1, third: 2, fourth: 3 };
-          const index = map[periodOfMonth as keyof typeof map];
-          nextOccurrence = monthDays[index] || null;
-        }
-
-        // 🧩 handle “weekday”, “weekend”, “day”
-        if (['weekday', 'weekend', 'day'].includes(periodOfDay)) {
           const isWeekend = (d: dayjs.Dayjs) => d.day() === 0 || d.day() === 6;
-          const days: dayjs.Dayjs[] = [];
-
           for (
             let d = firstDayOfMonth;
             d.isBefore(lastDayOfMonth) || d.isSame(lastDayOfMonth);
@@ -402,34 +396,37 @@ const generateOccurrences = (cls: any, maxDateInput: string): Occurrence[] => {
               (periodOfDay === 'weekend' && isWeekend(d)) ||
               periodOfDay === 'day'
             ) {
-              days.push(d);
+              matchingDays.push(d);
             }
           }
+        }
 
-          if (periodOfMonth === 'last') nextOccurrence = days[days.length - 1];
-          else {
-            const map = { first: 0, second: 1, third: 2, fourth: 3 };
-            const index = map[periodOfMonth as keyof typeof map];
-            nextOccurrence = days[index] || null;
-          }
+        if (periodOfMonth === 'last') {
+          nextOccurrence =
+            matchingDays.length > 0
+              ? matchingDays[matchingDays.length - 1]
+              : null;
+        } else {
+          const map = { first: 0, second: 1, third: 2, fourth: 3 };
+          const index = map[periodOfMonth as keyof typeof map];
+          nextOccurrence = matchingDays[index] || null;
         }
       }
 
-      // ✅ add valid occurrence
       if (
         nextOccurrence &&
         (nextOccurrence.isSame(today) || nextOccurrence.isAfter(today)) &&
-        (nextOccurrence.isSame(untilDate) || nextOccurrence.isBefore(untilDate))
+        (nextOccurrence.isSame(untilDate) || nextOccurrence.isBefore(untilDate)) &&
+        (nextOccurrence.isSame(maxDate) || nextOccurrence.isBefore(maxDate))
       ) {
         occurrences.push({
           ...cls,
           date_of_class: nextOccurrence.toISOString(),
         });
         count++;
+      } else {
+        count++;
       }
-
-      // move to the next year
-      current = current.add(repeatEvery, 'year').startOf('month');
     }
   }
 
@@ -443,10 +440,8 @@ export const getClassesByClubId = async (
 ): Promise<ClassCategories & { userCredit: any }> => {
   console.log(query.daysFromToday);
 
-  const maxData = dayjs()
-    .add(query.daysFromToday - 1, 'day')
-    .startOf('day')
-    .toISOString();
+  const maxData = dayjs().add(query.daysFromToday - 1, 'day').startOf('day').toISOString();
+  const startDate = query.startDate ? dayjs(query.startDate).startOf('day').add(1, 'day').toISOString(): '';
 
   console.log(maxData);
 
@@ -457,7 +452,7 @@ export const getClassesByClubId = async (
 
   const allOccurrences: Occurrence[] = [];
   for (const cls of classes) {
-    const occurrences = generateOccurrences(cls, maxData); // prevent mutation
+    const occurrences = generateOccurrences(cls, startDate , maxData); // prevent mutation
     allOccurrences.push(...occurrences);
   }
 
@@ -482,6 +477,10 @@ export const getClassSchedule = async (
     .populate({
       path: 'club',
       select: '_id allow_waiting_list allow_class_cancelation payment',
+    })
+    .populate({
+      path: 'creator',
+      select: 'profile.firstName profile.lastName profile.image profile.username',
     })
     .lean();
 

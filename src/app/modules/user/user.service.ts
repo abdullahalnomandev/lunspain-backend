@@ -69,7 +69,7 @@ const createUserToDB = async (
   if (isValid && createUser && payload.auth_provider === 'local') {
     const createAccountTemplate = emailTemplate.createAccount({
       email: createUser.email,
-      verify_url: `${config.front_end_app_url}verify?token=${payload.token}`,
+      verify_url: `${config.front_end_app_url}/verify?token=${payload.token}`,
     });
     emailHelper.sendEmail(createAccountTemplate);
     return createUser;
@@ -205,7 +205,8 @@ const updateSkypeProfileToDB = async (
       !isExistUser?.profile?.country
     ) {
       const welcomeEmailTemplate = emailTemplate.completeAccount(
-        isExistUser?.email as string
+        isExistUser?.email as string,
+        `${config.front_end_app_url}?userId=${isExistUser?._id}`
       );
       emailHelper.sendEmail(welcomeEmailTemplate);
     }

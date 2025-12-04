@@ -6,7 +6,7 @@ const commentReplySchema = new Schema<ICommentReply, CommentReplyModel>(
   {
     comment: {
       type: Schema.Types.ObjectId,
-      ref: 'Post',
+      ref: 'Comment',
       required: true,
     },
     creator: {

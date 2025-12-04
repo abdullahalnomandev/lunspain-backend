@@ -124,13 +124,23 @@ const getALlCommentsByPost = async (
     comment: { $in: commentIds },
   }).lean();
 
+  // Get reply counts for each comment individually
+  const replyCountsArr = await CommentReply.aggregate([
+    { $match: { comment: { $in: commentIds } } },
+    { $group: { _id: '$comment', count: { $sum: 1 } } }
+  ]);
+  const replyCountsMap = new Map<string, number>(
+    replyCountsArr.map((item: any) => [item._id.toString(), item.count])
+  );
+
   const likedCommentIds = new Set(likes.map((l: any) => l.comment.toString()));
 
-  // Add isCreator & isLiked fields
+  // Add isCreator & isLiked & replyCount fields
   const dataWithStatus = result.map((comment: any) => ({
     ...comment.toObject(),
     isCreator: comment.creator._id.toString() === userId,
     isLiked: likedCommentIds.has(comment._id.toString()),
+    replyCount: replyCountsMap.get(comment._id.toString()) || 0,
   }));
 
   return {
@@ -168,9 +178,9 @@ const getAllCommentReply = async (commentId: string, userId: string, query: Reco
     // .search(userSearchableField)
     .fields()
     .filter()
-    .sort();
+    .sort()
 
-  const result = await userQuery.modelQuery.populate('creator', 'profile.username profile.firstName profile.lastName profile.image');
+  const result = await userQuery.modelQuery.populate('creator', 'profile.username profile.firstName profile.lastName profile.image').populate('comment', 'text -_id');
 
   // Add isCreator field
   const dataWithIsCreator = result.map((reply: any) => ({

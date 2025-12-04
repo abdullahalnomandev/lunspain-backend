@@ -478,6 +478,26 @@ const getClubCloseStatus = async (clubId: string, userId: string) => {
   return { message: !!closeRequest ? 'Close request already exists' : 'No close request found', isRequestedToClose: !!closeRequest };
 };
 
+const getClubMembersByClubId = async (clubId: string, userId: string, query: Record<string, any>) => {
+  const result = new QueryBuilder(
+    ClubMember.find({ club: clubId }),
+    query
+  )
+    .paginate()
+    .fields()
+    .filter()
+    .sort()
+    .search(["profile.username", "profile.firstName", "profile.lastName", "profile.username","email"]);
+
+  const members = await result.modelQuery.lean().populate('user', 'profile.username profile.firstName profile.lastName profile.image');
+  const pagination = await result.getPaginationInfo();
+
+  return {
+    pagination,
+    data: members,
+  };
+};
+
 export const ClubService = {
   createClub,
   getAllClubs,
@@ -492,5 +512,6 @@ export const ClubService = {
   leaveClub,
   isLastMember,
   createCloseClubRequest,
-  getClubCloseStatus
+  getClubCloseStatus,
+  getClubMembersByClubId
 };
