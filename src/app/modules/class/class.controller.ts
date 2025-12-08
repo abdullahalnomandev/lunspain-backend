@@ -36,6 +36,22 @@ const getClassesByClubId = catchAsync(
     }
 );
 
+const getBookedClasses = catchAsync(
+    async (req: Request, res: Response, next: NextFunction) => {
+        const clubId = req.params.club_id;
+        const userId = req.user?.id;
+        const query = req.query;
+        const result = await ClassService.getBookedClasses(clubId,userId,query);
+
+        sendResponse(res, {
+            success: true,
+            statusCode: StatusCodes.OK,
+            message: 'Classes retrieved successfully',
+            data: result,
+        });
+    }
+);
+
 
 const getClassSchedule = catchAsync(
     async (req: Request, res: Response, next: NextFunction) => {
@@ -71,8 +87,13 @@ const deleteClass = catchAsync(
 const updateClass = catchAsync(
     async (req: Request, res: Response, next: NextFunction) => {
         const userId = req.user?.id;
-        const {class_id, club_id} = req.params;
-        const result = await ClassService.updateClass({...req.body,creator:userId});
+        const { class_id, club_id } = req.params;
+        const result = await ClassService.updateClass({
+            ...req.body,
+            creator: userId,
+            class_id,
+            club_id,
+        });
 
         sendResponse(res, {
             success: true,
@@ -103,6 +124,7 @@ const updateStatus = catchAsync(
 export const ClassController = {
     createClass,
     getClassesByClubId,
+    getBookedClasses,
     getClassSchedule,
     deleteClass,
     updateClass,

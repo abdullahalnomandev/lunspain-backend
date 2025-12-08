@@ -17,6 +17,7 @@ import { IClass } from './class.interface';
 import { Class } from './class.model';
 import { categorizeOccurrences, getDayIndex } from './class.util';
 import { ClassStatus } from './class_status/class_status.model';
+import { PAYMENT_STATUS } from '../bookingClass/booking.constant';
 
 dayjs.extend(utc);
 dayjs.extend(isoWeek);
@@ -33,6 +34,10 @@ export type Occurrence = {
   remaining_space?: number;
   booking_status?: string;
   class_mnamagers?: string[];
+  class_status?:string;
+  duration:string;
+  delete_class?:boolean;
+  reoccurring_class?:any
 };
 
 export type ClassCategories = {
@@ -433,6 +438,57 @@ const generateOccurrences = (
   return occurrences;
 };
 
+
+const generateOccurrencesToGetBook = async (
+  clubId: string,
+  userId: string
+): Promise<Occurrence[]> => {
+  const occurrences: Occurrence[] = [];
+
+  const bookings = await BookingClass.find({
+    club: clubId,
+    user: userId,
+    payment_status:{$ne:PAYMENT_STATUS.PENDING}
+  })
+    .populate({
+      path: 'class',
+      select:
+        'date_of_class start_time class_booking_ref_id reoccurring_class club reoccurring_class duration delete_class creator class_status const_per_ticket max_number_of_attendees class_name delete_class class_mnamagers',
+    })
+    .lean();
+
+  for (const booking of bookings) {
+    const cls: any = booking.class;
+    if (!cls || cls.delete_class) continue;
+
+    const [dateStr] = (booking.class_booking_ref_id || '').split('_');
+    const dateOfClass = dateStr
+      ? dayjs(dateStr).startOf('day').toISOString()
+      : dayjs(cls.date_of_class).startOf('day').toISOString();
+
+      console.log('t',dateStr)
+
+    occurrences.push({
+      _id: cls._id?.toString?.() ?? cls._id,
+      class_name: cls.class_name,
+      club: cls.club,
+      creator: cls.creator,
+      date_of_class: dateOfClass,
+      start_time: cls.start_time,
+      const_per_ticket: cls.const_per_ticket,
+      max_number_of_attendees: cls.max_number_of_attendees,
+      class_mnamagers: cls.class_mnamagers,
+      duration : cls.duration,
+      class_status:cls.class_status,
+      delete_class:cls.delete_class,
+      reoccurring_class:cls.reoccurring_class
+    });
+  }
+
+  console.log(occurrences)
+
+  return occurrences;
+};
 export const getClassesByClubId = async (
   clubId: string,
   userId: string,
@@ -455,6 +511,29 @@ export const getClassesByClubId = async (
     const occurrences = generateOccurrences(cls, startDate , maxData); // prevent mutation
     allOccurrences.push(...occurrences);
   }
+
+  const userCredit = (await UserCredit.findOne({
+    club: clubId,
+    user: userId,
+  })?.lean()) ?? { credit: 0 };
+
+  return {
+    userCredit: userCredit.credit,
+    ...(await categorizeOccurrences(allOccurrences, userId)),
+  };
+};
+
+export const getBookedClasses = async (
+  clubId: string,
+  userId: string,
+  query: Record<string, any>
+): Promise<ClassCategories & { userCredit: any }> => {
+
+  const allOccurrences: Occurrence[] = await generateOccurrencesToGetBook(
+    clubId,
+    userId
+  );
+
 
   const userCredit = (await UserCredit.findOne({
     club: clubId,
@@ -698,6 +777,7 @@ const updateStatus = async (payload: {
 export const ClassService = {
   createClass,
   getClassesByClubId,
+  getBookedClasses,
   getClassSchedule,
   deleteClass,
   updateClass,

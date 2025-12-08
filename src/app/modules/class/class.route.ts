@@ -19,6 +19,12 @@ router
         auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
         ClassController.getClassesByClubId
     )
+router
+    .route('/my-book-class/:club_id')
+    .get(
+        auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+        ClassController.getBookedClasses
+    )
 
 router
     .route('/class-schedule-details/:class_id/:class_start_date')
