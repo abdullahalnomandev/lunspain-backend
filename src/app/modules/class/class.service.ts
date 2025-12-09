@@ -145,7 +145,7 @@ const generateOccurrences = (
   // REPEAT NONE/ONCE
   if (cls.reoccurring_class.repeat === REPEAT_TYPE.NONE) {
     if (current.isSame(today) || current.isAfter(today)) {
-      occurrences.push({ ...cls, date_of_class: current.toISOString() });
+      occurrences.push({ ...cls, date_of_class: current.toISOString()});
     }
     return occurrences;
   }
@@ -218,7 +218,7 @@ const generateOccurrences = (
           (current.isSame(maxDate) || current.isBefore(maxDate)) &&
           count < totalOccurrences
         ) {
-          occurrences.push({ ...cls, date_of_class: current.toISOString() });
+          occurrences.push({ ...cls, date_of_class: current.toISOString(),local_date_of_class:dayjs(current).local().format()  });
           count++;
         }
       }
@@ -324,7 +324,7 @@ const generateOccurrences = (
       ) {
         occurrences.push({
           ...cls,
-          date_of_class: nextOccurrence.toISOString(),
+          date_of_class: nextOccurrence.toISOString()
         });
         count++;
       }
@@ -427,7 +427,7 @@ const generateOccurrences = (
       ) {
         occurrences.push({
           ...cls,
-          date_of_class: nextOccurrence.toISOString(),
+          date_of_class: nextOccurrence.toISOString()
         });
         count++;
       } else {
@@ -616,6 +616,8 @@ export const getClassSchedule = async (
 
   const classData: any = {
     ...existClass,
+    date_of_class:class_start_date,
+    local_date_of_class: dayjs(class_start_date).local().format(), // convert UTC to local time string
     allow_waiting_list: (existClass.club as any)?.allow_waiting_list || false,
     allow_class_cancelation:
       (existClass.club as any)?.allow_class_cancelation || false,
