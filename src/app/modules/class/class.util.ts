@@ -208,7 +208,6 @@ export const categorizeOccurrences = async (
 
     occ.remaining_space = occ.max_number_of_attendees - totalBooked;
 
-     console.log('occ',occ)
     if (isMyBooked) occ.booking_status = 'attended';
     else if (isCanceled) occ.booking_status = 'canceled';
     else

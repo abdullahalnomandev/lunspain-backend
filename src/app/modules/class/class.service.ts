@@ -182,6 +182,7 @@ const generateOccurrences = (
       current = current.add(repeatEvery, 'day');
       count++;
     }
+    console.log({totalOccurrences:cls.reoccurring_class.total_occurrences})
   }
   // REPEAT WEEKLY
   else if (cls.reoccurring_class.repeat === REPEAT_TYPE.WEEKLY) {
@@ -484,8 +485,6 @@ const generateOccurrencesToGetBook = async (
       reoccurring_class:cls.reoccurring_class
     });
   }
-
-  console.log(occurrences)
 
   return occurrences;
 };
