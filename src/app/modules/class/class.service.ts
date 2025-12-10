@@ -462,19 +462,15 @@ const generateOccurrencesToGetBook = async (
     const cls: any = booking.class;
     if (!cls || cls.delete_class) continue;
 
-    const [dateStr] = (booking.class_booking_ref_id || '').split('_');
-    const dateOfClass = dateStr
-      ? dayjs(dateStr).startOf('day').toISOString()
-      : dayjs(cls.date_of_class).startOf('day').toISOString();
+    const date_of_class = (booking.class_booking_ref_id || '').split('_');
 
-      console.log('t',dateStr)
 
     occurrences.push({
       _id: cls._id?.toString?.() ?? cls._id,
       class_name: cls.class_name,
       club: cls.club,
       creator: cls.creator,
-      date_of_class: dateOfClass,
+      date_of_class: `${date_of_class[0]}T00:00:00.000Z`,
       start_time: cls.start_time,
       const_per_ticket: cls.const_per_ticket,
       max_number_of_attendees: cls.max_number_of_attendees,

@@ -198,7 +198,7 @@ const deletePost = async (userId: string, postId: string) => {
 };
 
 const findById = async (postId: string) => {
-  const post = await Post.findById(postId).lean();
+  const post = await Post.findById(postId).lean().populate('creator', 'profile.username  profile.image');
   if (!post) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Post not found');
   }
