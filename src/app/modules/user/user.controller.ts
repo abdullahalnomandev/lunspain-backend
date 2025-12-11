@@ -223,6 +223,37 @@ const updateNotificationSettings = catchAsync(
   }
 );
 
+
+const createCloseAccountRequest = catchAsync(async (req: Request, res: Response) => {
+  const userId = req?.user?.id;
+  const { marketing_permission, feedback } = req.body;
+
+  const result = await UserService.createCloseAccountRequest(userId, marketing_permission, feedback);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Close Account request created successfully',
+    data: result,
+  });
+});
+
+
+const getAccountCloseStatus = catchAsync(async (req: Request, res: Response) => {
+  const userId = req?.user?.id;
+
+  const result = await UserService.getAccountCloseStatus(userId);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Close account status retrieved successfully',
+    data: result,
+  });
+});
+
+
+
 export const UserController = {
   createUser,
   getUserProfile,
@@ -236,4 +267,6 @@ export const UserController = {
   getFollowingList,
   getAllNotificationSettings,
   updateNotificationSettings,
+  createCloseAccountRequest,
+  getAccountCloseStatus
 };

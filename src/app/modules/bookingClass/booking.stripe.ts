@@ -11,13 +11,31 @@ import ApiError from '../../../errors/ApiError';
 import { StatusCodes } from 'http-status-codes';
 import { sendBookingConfirmEmail } from './booking.util';
 import { Club } from '../club/club.model';
+import { Coupon } from '../coupon/coupon.model';
 
 // import { RoyalMailOrderService } from './royalmail/order.roymail.service';
 
 
-export const bookClass = async (payload: IBookingClass, origin: string) => {
+export const bookClass = async (payload: IBookingClass, origin: string, coupon_code: string) => {
 
     payload.attandence_status = MEMBERS_STATUS.INITIAL;
+
+    let discountAmount = 0;
+    let couponDescription = '';
+    let hasCoupon = false;
+
+    let getSingleCoupon = null;
+
+    if (coupon_code) {
+        getSingleCoupon = await Coupon.findOne({ code: coupon_code });
+        if (!getSingleCoupon) {
+            throw new ApiError(StatusCodes.NOT_FOUND, 'Coupon not found');
+        }
+        hasCoupon = true;
+    }
+
+    const type = getSingleCoupon?.type; // percent || fixed;
+    const value = getSingleCoupon?.value;
 
     try {
         const classInfo = await Class.findById(payload.class).lean();
@@ -25,18 +43,36 @@ export const bookClass = async (payload: IBookingClass, origin: string) => {
         if (!userInfo) {
             throw new ApiError(StatusCodes.NOT_FOUND, 'User not found');
         }
-
         // Step 1: Create booking record (no transaction)
         payload.payment_status = PAYMENT_STATUS.PENDING;
         const create_booking = await BookingClass.create(payload);
 
         const club = await Club.findById(classInfo?.club);
         const user = await User.findById(club?.club_creator).select('+connected_account_id');
-        console.log({user})
+        console.log({ user });
 
         const vatRate = 0.45; // transaction charge ($0.45)
         const baseAmount = classInfo?.const_per_ticket || 0;
-        const finalAmount = Math.round((baseAmount + vatRate) * 100); // convert USD to cents
+
+        // Calculate discount
+        if (hasCoupon && type && value) {
+            if (type === 'percent') {
+                // Only allow non-negative values and not over 100%
+                const limitedPercent = Math.max(0, Math.min(value, 100));
+                discountAmount = ((baseAmount + vatRate) * limitedPercent) / 100;
+                couponDescription = ` (${limitedPercent}% off with coupon code "${coupon_code}")`;
+            } else if (type === 'fixed') {
+                const fixedDiscount = Math.max(0, Math.min(value, baseAmount + vatRate));
+                discountAmount = fixedDiscount;
+                couponDescription = ` ($${fixedDiscount} off with coupon code "${coupon_code}")`;
+            }
+        }
+
+        let discountedBase = (baseAmount + vatRate) - discountAmount;
+        if (discountedBase < 0) discountedBase = 0;
+
+        const finalAmount = Math.round(discountedBase * 100); // convert to cents
+
         // Step 2: Initialize Stripe
         const stripe = new Stripe(config.stripe.secret_key as string, {
             apiVersion: '2025-10-29.clover',
@@ -46,7 +82,6 @@ export const bookClass = async (payload: IBookingClass, origin: string) => {
         //@ts-ignore
         const stripeSession = await stripe.checkout.sessions.create({
             payment_method_types: ["card"],
-            // payment_method_types: ["card", "paypal"],
             mode: "payment",
             customer_email: userInfo.email,
             line_items: [
@@ -55,9 +90,11 @@ export const bookClass = async (payload: IBookingClass, origin: string) => {
                         currency: club?.payment?.currency_of_payment ?? "usd",
                         product_data: {
                             name: classInfo?.class_name as string,
-                            description: `${classInfo?.description as string} (includes $0.45 transaction fee)`,
+                            description: (classInfo?.description as string || '') +
+                                ` (includes $0.45 transaction fee)` +
+                                (hasCoupon ? couponDescription : ''),
                         },
-                        unit_amount: finalAmount.toString(), // amount in cents (base + $0.45 transaction fee)
+                        unit_amount: finalAmount.toString(), // discounted amount in cents
                     },
                     quantity: 1,
                 },
@@ -65,11 +102,12 @@ export const bookClass = async (payload: IBookingClass, origin: string) => {
             metadata: {
                 bookingId: create_booking.booking_id.toString(),
                 customerId: userInfo._id.toString(),
+                ...(hasCoupon ? { coupon_code } : {}),
             },
             payment_intent_data: {
                 application_fee_amount: Math.round(finalAmount * 0.1 * 100), // 10% fee
                 transfer_data: {
-                    destination:  String(userInfo?.connected_account_id), // must be acct_xxx
+                    destination: String(userInfo?.connected_account_id), // must be acct_xxx
                 },
             },
             success_url: `${origin}/api/v1/book-class-attandence/success?status=success&bookingId=${create_booking.booking_id}`,
@@ -87,6 +125,7 @@ export const bookClass = async (payload: IBookingClass, origin: string) => {
         );
     }
 };
+
 
 
 const bookConfirm = async (bookingId: string, status: string, res: Response) => {

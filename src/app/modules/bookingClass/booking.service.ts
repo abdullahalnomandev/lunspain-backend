@@ -19,7 +19,7 @@ import { ClubMember } from '../club/club_members/club_members.model';
 
 // Create a new booking class
 const createBookingClass = async (payload: Partial<IBookingClass & { date_of_class: string }>, origin: string): Promise<IBookingClass | { redirectStripeUrl: string }> => {
-  const { user, club, payment_method, class: classId, date_of_class } = payload;
+  const { user, club, payment_method, class: classId, date_of_class,coupon_code } = payload;
 
   // ---------------------------
   // 1. Basic Entity Validation
@@ -121,7 +121,7 @@ const createBookingClass = async (payload: Partial<IBookingClass & { date_of_cla
   // 6. Payment method: STRIPE
   // ---------------------------
   if (payment_method === PAYMENT_METHOD.STRIPE) {
-    const createOrder = await BookingClassCardService.bookClass(payload as IBookingClass, origin);
+    const createOrder = await BookingClassCardService.bookClass(payload as IBookingClass, origin,coupon_code as string);
     return createOrder;
   }
 

@@ -74,12 +74,23 @@ router
     UserController.getAllNotificationSettings
   );
 
+router.post(
+  '/close-account-request',
+  auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  UserController.createCloseAccountRequest
+);
+
+router.get(
+  '/leave-account/status',
+  auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  UserController.getAccountCloseStatus
+);
+
 router
   .route('/notification-settings')
   .patch(
     auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
     UserController.updateNotificationSettings
   );
-
 
 export const UserRoutes = router;

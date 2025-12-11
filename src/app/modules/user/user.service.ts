@@ -22,6 +22,9 @@ import { UserNotificationSettings } from './notificaiton_settings/notification_s
 import { sendNotification } from '../../../shared/sendNotification';
 import { NOTIFICATION_OPTION } from './notificaiton_settings/notification_settings.constant';
 import { Notification } from '../notification/notification.mode';
+import { CloseAccountRequest } from './privacy/close_account_request.model';
+import { CLOSING_STATUS } from './privacy/close_account_request.interface';
+import { CLUB_ROLE } from '../club/club.constant';
 
 const createUserToDB = async (
   payload: Partial<IUser>
@@ -504,6 +507,80 @@ const updateNotificationSettingsFromDB = async (
   );
 };
 
+
+const createCloseAccountRequest = async (
+  userId: string,
+  marketing_permission: boolean,
+  feedback: string
+) => {
+
+  // Check if user exists
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new Error("User doesn't exist");
+  }
+
+  const existingRequest = await CloseAccountRequest.findOne({
+    account: userId,
+    requested_user: userId,
+  });
+
+  if (existingRequest) {
+    await CloseAccountRequest.deleteOne({ _id: existingRequest._id });
+    return { message: 'Close Account request removed' };
+  }
+
+  const closeAccountRequest = await CloseAccountRequest.create({
+    account: userId,
+    requested_user: userId,
+    marketing_permission,
+    feedback,
+  });
+
+  const requestEmail = emailTemplate.RequestToCloseClub(user?.email || '');
+  emailHelper.sendEmail(requestEmail);
+
+  // SET SCHEDULE TRIGGER TO DELETE USER ACCOUNT AFTER 48 HOURS IF NO MARKETING PERMISSION
+  setCronJob('0 0 */2 * *', async () => {
+
+    const existRequest = await CloseAccountRequest.findOne({
+      account: userId,
+      requested_user: userId,
+    });
+
+    if (existRequest && existRequest.closing_status === CLOSING_STATUS.PENDING) {
+
+      if (existRequest.marketing_permission) {
+        // Optionally handle marketing permission logic for user here if needed
+      } else {
+        await User.findByIdAndDelete(userId);
+        // Optionally delete related references if necessary
+      }
+
+      await CloseAccountRequest.updateOne({ _id: existRequest._id }, { closing_status: CLOSING_STATUS.CLOSED });
+
+      const closeEmail = emailTemplate.AccountClosedNotificaiton(user?.email || '');
+      emailHelper.sendEmail(closeEmail);
+
+    }
+
+  });
+
+  return closeAccountRequest;
+};
+
+
+const getAccountCloseStatus = async (userId: string) => {
+  const closeRequest = await CloseAccountRequest.findOne({
+    account: userId,
+    requested_user: userId,
+  });
+
+
+
+  return { message: !!closeRequest ? 'Close request already exists' : 'No close request found', isRequestedToClose: !!closeRequest };
+};
+
 export const UserService = {
   createUserToDB,
   getUserProfileFromDB,
@@ -518,4 +595,7 @@ export const UserService = {
   getFollowingListFromDB,
   getAllNotificationSettingsFromDB,
   updateNotificationSettingsFromDB,
+  createCloseAccountRequest,
+  getAccountCloseStatus
+  
 };

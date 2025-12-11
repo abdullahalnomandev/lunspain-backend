@@ -90,7 +90,7 @@ const getAllConversaions = async (query: Record<string, any>, userId: string) =>
             path: populateField,
             select: "_id profile.username email profile.image profile.firstName profile.lastName", // add more if needed
             model: "User",
-            match: search ? { "profile.username name": { $regex: search, $options: "i" } } : {}, // search on user name
+            match: search ? { "profile.username profile.firstName profile.lastName": { $regex: search, $options: "i" } } : {}, // search on user name
         })
         .populate({
             path: "lastMessage",

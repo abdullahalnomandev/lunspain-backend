@@ -1,0 +1,35 @@
+import express from 'express';
+import { USER_ROLES } from '../../../enums/user';
+import auth from '../../middlewares/auth';
+import { CouponController } from './coupon.controller';
+
+const router = express.Router();
+
+router
+  .route('/')
+  .post(
+    auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+    CouponController.createCoupon
+  )
+  .get(
+    auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+    CouponController.getAllCoupons
+  );
+
+router
+  .route('/:id')
+  .get(
+    auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+    CouponController.getSingleCoupon
+  )
+  .patch(
+    auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+    CouponController.updateCoupon
+  )
+  .delete(
+    auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+    CouponController.deleteCoupon
+  );
+
+export const CouponRoutes = router;
+

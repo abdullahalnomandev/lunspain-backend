@@ -11,6 +11,8 @@ import { StripeRoutes } from '../app/modules/stripe/stripe.route';
 import { ConversationRoutes } from '../app/modules/conversation/conversation.route';
 import { MessageRoutes } from '../app/modules/message/message.route';
 import { NotificationRoutes } from '../app/modules/notification/notification.route';
+import { TagRoutes } from '../app/modules/tag/tag.route';
+import { CouponRoutes } from '../app/modules/coupon/coupon.route';
 const router = express.Router();
 
 const apiRoutes = [
@@ -61,6 +63,14 @@ const apiRoutes = [
   {
     path: '/notification',
     route: NotificationRoutes
+  },
+  {
+    path: '/tag',
+    route: TagRoutes
+  },
+  {
+    path: '/coupon',
+    route: CouponRoutes
   }
 ];
 
