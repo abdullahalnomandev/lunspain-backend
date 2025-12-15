@@ -97,7 +97,11 @@ const fileUploadHandler = () => {
 
   const upload = multer({
     storage: storage,
-    fileFilter: filterFilter,
+    fileFilter: filterFilter as (
+      req: Express.Request,
+      file: Express.Multer.File,
+      callback: multer.FileFilterCallback
+    ) => void,
   }).fields([
     { name: 'image', maxCount: 3 },
     { name: 'cover_image', maxCount: 3 },

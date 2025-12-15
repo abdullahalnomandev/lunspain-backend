@@ -25,6 +25,7 @@ import { Notification } from '../notification/notification.mode';
 import { CloseAccountRequest } from './privacy/close_account_request.model';
 import { CLOSING_STATUS } from './privacy/close_account_request.interface';
 import { CLUB_ROLE } from '../club/club.constant';
+import { Conversation } from '../conversation/conversaiton.model';
 
 const createUserToDB = async (
   payload: Partial<IUser>
@@ -43,21 +44,18 @@ const createUserToDB = async (
   let isValid = false;
 
   //GOOGLE
-  if (
-    payload.auth_provider === 'google' &&
-    payload.google_id_token
-  ) {
+  if (payload.auth_provider === 'google' && payload.google_id_token) {
     const tokenData = await getUserInfoWithToken(payload?.google_id_token);
     payload.email = tokenData?.data?.email;
     payload.email = tokenData?.data?.email;
 
-    const fullName = tokenData?.data?.name?.trim() || "";
+    const fullName = tokenData?.data?.name?.trim() || '';
     const [firstName, ...rest] = fullName.split(/\s+/);
 
     (payload as any).profile = {
       ...payload.profile,
-      firstName: firstName || "",
-      lastName: rest.join(" ") || "",
+      firstName: firstName || '',
+      lastName: rest.join(' ') || '',
     };
 
     isValid = true;
@@ -183,7 +181,10 @@ const updateProfileToDB = async (
   if (payload.image && payload.image === isExistUser.profile?.image) {
     unlinkFile(payload.image as string);
   }
-  if (payload.cover_image && payload.cover_image === isExistUser.profile?.cover_image) {
+  if (
+    payload.cover_image &&
+    payload.cover_image === isExistUser.profile?.cover_image
+  ) {
     unlinkFile(payload.cover_image as string);
   }
   if (!!payload.year_of_exprience) {
@@ -280,7 +281,11 @@ const getAllUsers = async (query: Record<string, any>) => {
 //     select: "-active",
 //   },
 // })
-export const toggleFollowUser = async (userId: string, targetId: string, fcmToken: string) => {
+export const toggleFollowUser = async (
+  userId: string,
+  targetId: string,
+  fcmToken: string
+) => {
   if (userId === targetId) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'You cannot follow yourself');
   }
@@ -292,7 +297,10 @@ export const toggleFollowUser = async (userId: string, targetId: string, fcmToke
 
   if (isFollowing) {
     await Follower.findByIdAndDelete(isFollowing._id);
-    Notification.deleteOne({ deleteReferenceId: isFollowing._id, sender: userId }).exec();
+    Notification.deleteOne({
+      deleteReferenceId: isFollowing._id,
+      sender: userId,
+    }).exec();
     return {
       message: 'Unfollowed successfully',
     };
@@ -303,22 +311,25 @@ export const toggleFollowUser = async (userId: string, targetId: string, fcmToke
     });
 
     //  SEND NOTIFICATION
-    const userNotificationSettings = await User.findById(targetId, '-_id notification_settings')
+    const userNotificationSettings = await User.findById(
+      targetId,
+      '-_id notification_settings'
+    )
       .populate('notification_settings')
-      .lean().exec();
+      .lean()
+      .exec();
 
-    const { new_followers } = userNotificationSettings?.notification_settings as IUserNotificationSettings;
-    sendNotification(new_followers,
-      {
-        receiver: targetId,
-        sender: userId,
-        title: 'A user has followed you',
-        refId: userId,
-        deleteReferenceId: follow._id,
-        path: '/follow/user',
-        fcmToken
-      }
-    );
+    const { new_followers } =
+      userNotificationSettings?.notification_settings as IUserNotificationSettings;
+    sendNotification(new_followers, {
+      receiver: targetId,
+      sender: userId,
+      title: 'A user has followed you',
+      refId: userId,
+      deleteReferenceId: follow._id,
+      path: '/follow/user',
+      fcmToken,
+    });
 
     // SEND NOTIFICATION END
 
@@ -393,6 +404,14 @@ const getUserProfileByIdFromDB = async (
     })
   );
 
+  // Determine if a conversation exists between userId and requestUserId
+  const conversationId = await Conversation.findOne({
+    $or: [
+      { creator: userId, participant: requestUserId },
+      { creator: requestUserId, participant: userId },
+    ],
+  }).lean();
+  
   // Check if requestUserId follows userId
   const isFollowing = !!(await Follower.findOne({
     follower: userId,
@@ -409,6 +428,7 @@ const getUserProfileByIdFromDB = async (
     },
     posts: postsWithCounts,
     isFollowing,
+    conversationId
   };
 
   // Remove the actual lists from the response
@@ -532,13 +552,11 @@ const updateNotificationSettingsFromDB = async (
   );
 };
 
-
 const createCloseAccountRequest = async (
   userId: string,
   marketing_permission: boolean,
   feedback: string
 ) => {
-
   // Check if user exists
   const user = await User.findById(userId);
   if (!user) {
@@ -567,14 +585,15 @@ const createCloseAccountRequest = async (
 
   // SET SCHEDULE TRIGGER TO DELETE USER ACCOUNT AFTER 48 HOURS IF NO MARKETING PERMISSION
   setCronJob('0 0 */2 * *', async () => {
-
     const existRequest = await CloseAccountRequest.findOne({
       account: userId,
       requested_user: userId,
     });
 
-    if (existRequest && existRequest.closing_status === CLOSING_STATUS.PENDING) {
-
+    if (
+      existRequest &&
+      existRequest.closing_status === CLOSING_STATUS.PENDING
+    ) {
       if (existRequest.marketing_permission) {
         // Optionally handle marketing permission logic for user here if needed
       } else {
@@ -582,18 +601,20 @@ const createCloseAccountRequest = async (
         // Optionally delete related references if necessary
       }
 
-      await CloseAccountRequest.updateOne({ _id: existRequest._id }, { closing_status: CLOSING_STATUS.CLOSED });
+      await CloseAccountRequest.updateOne(
+        { _id: existRequest._id },
+        { closing_status: CLOSING_STATUS.CLOSED }
+      );
 
-      const closeEmail = emailTemplate.AccountClosedNotificaiton(user?.email || '');
+      const closeEmail = emailTemplate.AccountClosedNotificaiton(
+        user?.email || ''
+      );
       emailHelper.sendEmail(closeEmail);
-
     }
-
   });
 
   return closeAccountRequest;
 };
-
 
 const getAccountCloseStatus = async (userId: string) => {
   const closeRequest = await CloseAccountRequest.findOne({
@@ -601,9 +622,12 @@ const getAccountCloseStatus = async (userId: string) => {
     requested_user: userId,
   });
 
-
-
-  return { message: !!closeRequest ? 'Close request already exists' : 'No close request found', isRequestedToClose: !!closeRequest };
+  return {
+    message: !!closeRequest
+      ? 'Close request already exists'
+      : 'No close request found',
+    isRequestedToClose: !!closeRequest,
+  };
 };
 
 export const UserService = {
@@ -621,6 +645,5 @@ export const UserService = {
   getAllNotificationSettingsFromDB,
   updateNotificationSettingsFromDB,
   createCloseAccountRequest,
-  getAccountCloseStatus
-
+  getAccountCloseStatus,
 };

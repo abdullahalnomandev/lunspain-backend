@@ -56,5 +56,10 @@ router.get('/search/:postType',
   PostController.getALlTypeOfpost);
 
 
+router.get('/posts-by-club/:clubId',
+  auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+  PostController.getPostsByClub);
+
+
 
 export const PostRoutes = router;

@@ -413,6 +413,27 @@ const getALlUserLikedPost = async (
     data: grouped,
   };
 };
+
+
+const getPostsByClub = async (clubId: string, userId: string,query: Record<string, any>) => {
+
+  const result = new QueryBuilder(
+    Post.find({ club: clubId }),
+    query
+  )
+    .paginate()
+    .fields()
+    .filter()
+    .sort();
+
+  const posts = await result.modelQuery;
+  const pagination = await result.getPaginationInfo();
+
+  return {
+    pagination,
+    data: posts,
+  };
+}
 export const PostService = {
   createPost,
   getAllMyDrafts,
@@ -422,4 +443,5 @@ export const PostService = {
   getAllPosts,
   getALlTypeOfpost,
   getALlUserLikedPost,
+  getPostsByClub
 };

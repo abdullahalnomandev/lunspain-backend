@@ -104,7 +104,8 @@ const forgetPasswordToDB = async (email: string) => {
   //send mail
   const generateId = crypto.randomUUID();
   const value = {
-    resetLink: `${config.front_end_app_url}/reset-password?token=${generateId}`,
+    // resetLink: `${config.front_end_app_url}/reset-password?token=${generateId}`,
+    resetLink: `${config.front_end_app_url}?screen=reset-password&token=${generateId}`,
     email: isExistUser.email,
   };
   const forgetPassword = emailTemplate.resetPassword(value);

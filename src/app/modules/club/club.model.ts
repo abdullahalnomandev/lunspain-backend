@@ -1,6 +1,9 @@
 import { model, Schema } from 'mongoose';
 import { CLUB_PERIOD_TYPE } from './club.constant';
 import { ClubModel, IClub } from './club.interface';
+import ApiError from '../../../errors/ApiError';
+import { StatusCodes } from 'http-status-codes';
+import { ClubNotificationSettings } from './club_notificaiton_settings/club_notification_settings.model';
 
 const clubSchema = new Schema<IClub, ClubModel>(
   {
@@ -62,6 +65,11 @@ const clubSchema = new Schema<IClub, ClubModel>(
       type: Boolean,
       default: true,
     },
+    club_notification_settings: {
+      type: Schema.Types.ObjectId,
+      ref: 'ClubNotificationSettings',
+      default: null,
+    },
     pre_class_cancelation: {
       period: {
         type: Number,
@@ -95,5 +103,17 @@ const clubSchema = new Schema<IClub, ClubModel>(
   },
   { timestamps: true }
 );
+
+
+
+clubSchema.pre('save', async function (next) {
+  if (!this.club_notification_settings) {
+    const createdSettings = await ClubNotificationSettings.create({});
+    this.club_notification_settings = createdSettings._id;
+  }
+
+  next();
+});
+
 
 export const Club = model<IClub>('Club', clubSchema);

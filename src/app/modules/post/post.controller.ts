@@ -125,6 +125,21 @@ const getALlUserLikedPost = catchAsync(async (req: Request, res: Response) => {
 });
 
 
+const getPostsByClub = catchAsync(async (req: Request, res: Response) => {
+  const { clubId } = req.params;
+  const userId = req.user?.id;
+  const result = await PostService.getPostsByClub(clubId, userId,req.query);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Posts retrieved successfully',
+    pagination:result.pagination,
+    data: result.data
+  });
+});
+
+
 
 export const PostController = {
   createPost,
@@ -134,5 +149,6 @@ export const PostController = {
   deletePost,
   getAllMyDrafts,
   getALlTypeOfpost,
-  getALlUserLikedPost
+  getALlUserLikedPost,
+  getPostsByClub
 };

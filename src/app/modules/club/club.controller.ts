@@ -261,6 +261,40 @@ const getClubMembersByClubId = catchAsync(async (req: Request, res: Response) =>
 
 });
 
+const getAllClubNotificationSettings = catchAsync(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+
+    const result = await ClubService.getClubNotificationSettings(userId,req?.params?.clubId as string);
+
+    sendResponse(res, {
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: 'Club Notification settings retrieved successfully',
+      data: result,
+    });
+  }
+);
+
+
+
+const updateClubNotificationSettings = catchAsync(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+    const clubId = req?.params?.clubId as string;
+    const updatePayload = req.body;
+
+    // Here we assume you have a service method for updating club notification settings
+    const result = await ClubService.updateClubNotificationSettings(userId, clubId, updatePayload);
+
+    sendResponse(res, {
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: 'Club Notification settings updated successfully',
+      data: result,
+    });
+  }
+);
 
 
 export const ClubController = {
@@ -278,5 +312,7 @@ export const ClubController = {
   isLastMember,
   createCloseClubRequest,
   getClubCloseStatus,
-  getClubMembersByClubId
+  getClubMembersByClubId,
+  getAllClubNotificationSettings,
+  updateClubNotificationSettings
 };

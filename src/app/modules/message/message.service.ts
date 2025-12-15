@@ -48,7 +48,7 @@ const getAllMessages = async (
       conversation: conversationId,
     }),
     query
-  ).paginate();
+  ).paginate().sort();
 
   const data = await result.modelQuery
     .populate({
@@ -57,7 +57,7 @@ const getAllMessages = async (
         'profile.username profile.image profile.firstName profile.lastName _id',
       model: 'User',
     })
-    .sort({ createdAt: 1 });
+    // .sort({ createdAt: 1 });
 
   const pagination = await result.getPaginationInfo();
 

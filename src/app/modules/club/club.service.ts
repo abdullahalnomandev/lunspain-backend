@@ -12,6 +12,10 @@ import { CloseClubRequest } from './privacy/close_club_request.model';
 import setCronJob from '../../../shared/setCronJob';
 import { CLOSING_STATUS } from './privacy/close_club_request.interface';
 import { ClubMemberLeave } from './club_members/club_member_leave.model';
+import { ClubNotificationSettingsModel } from './club_notificaiton_settings/club_notifation_sttings.interface';
+import ApiError from '../../../errors/ApiError';
+import { StatusCodes } from 'http-status-codes';
+import { ClubNotificationSettings } from './club_notificaiton_settings/club_notification_settings.model';
 
 //Create a new club
 const createClub = async (payload: IClub & { club_members: string[] }) => {
@@ -498,6 +502,44 @@ const getClubMembersByClubId = async (clubId: string, userId: string, query: Rec
   };
 };
 
+
+
+const getClubNotificationSettings = async (user: string,clubId:string) => {
+  const notificationSettings = await Club.findById(
+    clubId,
+    '-_id club_notification_settings'
+  )
+    .populate('club_notification_settings')
+    .lean();
+
+    console.log({clubId})
+
+  return notificationSettings?.club_notification_settings;
+};
+
+
+
+
+const updateClubNotificationSettings = async ( userId: string, clubId: string, updatePayload: any ) => {
+  const club = await Club.findById(clubId);
+  if (!club) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "Club doesn't exist!");
+  }
+
+  if (!club.club_notification_settings) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "Club notification settings not found!");
+  }
+
+  const updatedSettings = await ClubNotificationSettings.findByIdAndUpdate(
+    club.club_notification_settings,
+    { $set: updatePayload },
+    { new: true }
+  );
+
+  return updatedSettings;
+};
+
+
 export const ClubService = {
   createClub,
   getAllClubs,
@@ -513,5 +555,7 @@ export const ClubService = {
   isLastMember,
   createCloseClubRequest,
   getClubCloseStatus,
-  getClubMembersByClubId
+  getClubMembersByClubId,
+  getClubNotificationSettings,
+  updateClubNotificationSettings
 };

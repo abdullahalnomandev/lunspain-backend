@@ -83,5 +83,17 @@ router.get(
   ClubController.getClubCloseStatus
 );
 
+router
+  .route('/club_notification-settings/:clubId')
+  .get(
+    auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+    ClubController.getAllClubNotificationSettings
+  )
+  .patch(
+    auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+    ClubController.updateClubNotificationSettings // Make sure this controller method exists and is implemented
+  );
+
+
 
 export const ClubRoutes = router;

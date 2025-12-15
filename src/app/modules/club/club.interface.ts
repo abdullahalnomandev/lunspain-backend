@@ -1,5 +1,7 @@
 import { Model, Schema } from 'mongoose';
 import { CLUB_PERIOD_TYPE } from './club.constant';
+import { Types } from 'mongoose';
+import { ClubNotificationSettingsModel } from './club_notificaiton_settings/club_notifation_sttings.interface';
 
 export type IClub = {
   name: string;
@@ -15,6 +17,7 @@ export type IClub = {
   image: string;
   cover_image: string;
   enable_public_club:boolean;
+  club_notification_settings?: Types.ObjectId | ClubNotificationSettingsModel;
   // Club Settings
   allow_waiting_list: boolean; // default: true
   allow_class_cancelation: boolean; // default: true
