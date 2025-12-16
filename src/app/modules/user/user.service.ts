@@ -191,8 +191,6 @@ const updateProfileToDB = async (
     payload.year_of_exprience = Number(payload.year_of_exprience) as any;
   }
 
-  console.log(payload);
-
   const updatedUser = await User.findByIdAndUpdate(
     id,
     { $set: { profile: { ...isExistUser.profile, ...payload } } },

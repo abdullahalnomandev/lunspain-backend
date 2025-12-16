@@ -13,6 +13,13 @@ router
   );
 
 router
+  .route('/club_notification/:clubId')
+  .get(
+    auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+    NotificationController.club_notification
+  );
+
+router
   .route('/:id')
   .patch(
     auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),

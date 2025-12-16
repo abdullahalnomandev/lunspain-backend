@@ -48,7 +48,6 @@ export type ClassCategories = {
 };
 // Create a new class
 const createClass = async (payload: IClass) => {
-  console.log(payload);
   const isClubExist = await Club.findById(payload.club).lean();
   if (!isClubExist) {
     throw new Error('Club id not correct!');
@@ -107,7 +106,6 @@ const createClass = async (payload: IClass) => {
   const leaders = await User.find({ _id: { $in: klass.class_mnamagers } })
     .lean()
     .select('-_id email');
-  console.log(leaders);
 
   leaders.map(({ email }) => {
     const welcomeEmailTemplate = emailTemplate.WelcomMessageForClassCreation(
@@ -182,7 +180,6 @@ const generateOccurrences = (
       current = current.add(repeatEvery, 'day');
       count++;
     }
-    console.log({totalOccurrences:cls.reoccurring_class.total_occurrences})
   }
   // REPEAT WEEKLY
   else if (cls.reoccurring_class.repeat === REPEAT_TYPE.WEEKLY) {
@@ -489,12 +486,10 @@ export const getClassesByClubId = async (
   userId: string,
   query: Record<string, any>
 ): Promise<ClassCategories & { userCredit: any }> => {
-  console.log(query.daysFromToday);
+
 
   const maxData = dayjs().add(query.daysFromToday - 1, 'day').startOf('day').toISOString();
   const startDate = query.startDate ? dayjs(query.startDate).startOf('day').add(1, 'day').toISOString(): '';
-
-  console.log(maxData);
 
   const classes = await Class.find(
     { club: clubId, delete_class: false },
@@ -646,7 +641,6 @@ const deleteClass = async (userId: string, id: string) => {
   if (cls.delete_class) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Class already deleted...');
   }
-  console.log(cls);
 
   const isLeader = cls.class_mnamagers.find(
     (user: any) => user.toString() === userId
@@ -657,7 +651,6 @@ const deleteClass = async (userId: string, id: string) => {
       'Only class leaders can delete this class'
     );
 
-  console.log({ id });
   const deletedClass = await Class.findByIdAndUpdate(
     id,
     { delete_class: true },

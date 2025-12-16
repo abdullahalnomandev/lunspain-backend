@@ -4,13 +4,15 @@ import { IUser } from "../user/user.interface";
 export interface INotification {
   _id:Types.ObjectId;
   receiver: Schema.Types.ObjectId | IUser;
-  sender: Schema.Types.ObjectId | IUser | null;
+  sender?: Schema.Types.ObjectId | IUser | null;
+  receiver_club?: Schema.Types.ObjectId | IUser | null;
   title: string;
   message: string;
-  refId: Schema.Types.ObjectId;
-  deleteReferenceId: Schema.Types.ObjectId;
-  path: string;
-  seen: boolean;
+  refId?: Schema.Types.ObjectId;
+  deleteReferenceId?: Schema.Types.ObjectId;
+  path?: string;
+  seen?: boolean;
+  fcmToken?:string;
   createdAt?: Date;
   updatedAt?: Date;
 }

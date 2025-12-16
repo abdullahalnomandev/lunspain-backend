@@ -49,7 +49,6 @@ export const bookClass = async (payload: IBookingClass, origin: string, coupon_c
 
         const club = await Club.findById(classInfo?.club);
         const user = await User.findById(club?.club_creator).select('+connected_account_id');
-        console.log({ user });
 
         const vatRate = 0.45; // transaction charge ($0.45)
         const baseAmount = classInfo?.const_per_ticket || 0;

@@ -48,8 +48,6 @@ const loginUserFromDB = async (payload: ILoginData) => {
     if (payload.auth_provider === USER_AUTH_PROVIDER.LOCAL && password) {
       userInfo = await User.findOne({ email }).select('+password');
 
-      console.log(userInfo);
-
       if (
         userInfo &&
         !(await User.isMatchPassword(password, userInfo.password))

@@ -48,7 +48,6 @@ const createBookingClass = async (payload: Partial<IBookingClass & { date_of_cla
   // 2. Check if user is a club member
   // ---------------------------
   const isMember = await ClubMember.findOne({ club: club, user: user }).lean();
-  console.log({ isMember })
 
   if (!isMember) {
     throw new ApiError(
@@ -93,15 +92,11 @@ const createBookingClass = async (payload: Partial<IBookingClass & { date_of_cla
   payload.attandence_status = MEMBERS_STATUS.ATTEND;
   payload.class_booking_ref_id = `${date_of_class.split('T')[0]}_${classExists._id}`
   // payload.class_booking_ref_id = `${classExists.date_of_class.toISOString().split('T')[0]}_${classExists._id}`
-  console.log(classExists)
   // ---------------------------
   // 5. Payment method: PAY IN PERSON
   // ---------------------------
   if (payment_method === PAYMENT_METHOD.PAY_IN_PERSON) {
     const userCredit = await UserCredit.findOne({ user, club: club });
-
-    console.log({userCredit})
-
     if (userCredit && userCredit.credit >= 1) {
       payload.payment_status = PAYMENT_STATUS.PAID;
       await UserCredit.updateOne(
@@ -355,7 +350,6 @@ const cancelAttendence = async (userId: string, classBookingRefId: string) => {
 
   if (booking && totalBooked === maxCapacity - 1) {
     const cronJob = cron.schedule('*/30 * * * *', async () => {
-      console.log("TRIGGERED", booking.class_booking_ref_id)
       const lastOrder = await BookingClass.findOne({
         club: booking.club,
         class: booking.class,
@@ -365,8 +359,6 @@ const cancelAttendence = async (userId: string, classBookingRefId: string) => {
       }, { booking_id: 1, user: 1 })
         .sort({ createdAt: 1 })
         .lean();
-
-      console.log({ lastOrder })
 
       if (!lastOrder) {
         cronJob.stop();

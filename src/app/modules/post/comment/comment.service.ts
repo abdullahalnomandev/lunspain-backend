@@ -10,9 +10,13 @@ import { createNotificationThatYouAreTagged } from '../post.util';
 import { ICommentReply } from './commentReply/commentReply.interface';
 import { CommentReply } from './commentReply/commentReply.modelt';
 import { CommentLike } from './commentLike/commentLike.modelt';
+import { CREATOR_TYPE, POST_TYPE } from '../post.constant';
+import { IClubNotificationSettings } from '../../club/club_notificaiton_settings/club_notifation_sttings.interface';
+import { Club } from '../../club/club.model';
+import { CLUB_NOTIFICATION_OPTION } from '../../club/club_notificaiton_settings/club_notification_settings.constant';
 
 // Create a new comment
-const createComment = async (payload: IComment,fcmToken:string) => {
+const createComment = async (payload: IComment, fcmToken: string) => {
   const post = await Post.findById(payload.post);
   if (!post) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Post id is not valid');
@@ -32,19 +36,42 @@ const createComment = async (payload: IComment,fcmToken:string) => {
   createNotification({
     sender: payload.creator.toString(),
     refId: payload.post.toString(),
-    deleteReferenceId:comment._id,
-    receiver:(post as any).creator.toString(),
-    fcmToken
-  })
+    deleteReferenceId: comment._id,
+    receiver: (post as any).creator.toString(),
+    fcmToken,
+  });
 
   createNotificationThatYouAreTagged({
     sender: payload.creator.toString(),
     refId: payload.post.toString(),
-    deleteReferenceId:comment._id,
-    receiver:(post as any).creator.toString(),
-    type:'comment',
-    taggedUsers : post.tag_user
-  })
+    deleteReferenceId: comment._id,
+    receiver: (post as any).creator.toString(),
+    type: 'comment',
+    taggedUsers: post.tag_user,
+  });
+
+  //
+  if (post.creator_type === CREATOR_TYPE.CLUB) {
+    const creator = post.club;
+
+    const club = await Club.findById(creator, '-_id club_notification_settings').populate('club_notification_settings').lean();
+    const notificationSettings = club?.club_notification_settings as IClubNotificationSettings | undefined;
+
+    const comments_on_your_posts = notificationSettings?.comments_on_your_posts;
+    const shouldSend =  comments_on_your_posts === CLUB_NOTIFICATION_OPTION.FROM_EVERYONE
+    
+    if (shouldSend) {
+      Notification.create({
+        receiver: creator,
+        receiver_club: creator, 
+        sender: payload.creator,
+        title: "A user commented on your club's post",
+        refId: post._id,
+        deleteReferenceId: comment._id,
+        path: `/user/post/comment/${comment._id}`,
+      });
+    }
+  }
   return comment;
 };
 
@@ -86,16 +113,18 @@ const findById = async (id: string) => {
 };
 
 // Delete a comment by ID
-const deleteComment = async (id: string,userId:string) => {
+const deleteComment = async (id: string, userId: string) => {
   const deletedComment = await Comment.findByIdAndDelete(id);
   if (!deletedComment) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Comment not found');
   }
-    Notification.deleteOne({ deleteReferenceId: deletedComment._id, sender: userId }).exec();
-  
+  Notification.deleteOne({
+    deleteReferenceId: deletedComment._id,
+    sender: userId,
+  }).exec();
+
   return deletedComment;
 };
-
 
 const getALlCommentsByPost = async (
   postId: string,
@@ -127,7 +156,7 @@ const getALlCommentsByPost = async (
   // Get reply counts for each comment individually
   const replyCountsArr = await CommentReply.aggregate([
     { $match: { comment: { $in: commentIds } } },
-    { $group: { _id: '$comment', count: { $sum: 1 } } }
+    { $group: { _id: '$comment', count: { $sum: 1 } } },
   ]);
   const replyCountsMap = new Map<string, number>(
     replyCountsArr.map((item: any) => [item._id.toString(), item.count])
@@ -149,8 +178,6 @@ const getALlCommentsByPost = async (
   };
 };
 
-
-
 const createCommentReply = async (payload: ICommentReply) => {
   const post = await Comment.findById(payload.comment);
   if (!post) {
@@ -170,17 +197,27 @@ const createCommentReply = async (payload: ICommentReply) => {
   return comment;
 };
 
-
-
-const getAllCommentReply = async (commentId: string, userId: string, query: Record<string, unknown>) => {
-  const userQuery = new QueryBuilder(CommentReply.find({ comment: commentId }), query)
+const getAllCommentReply = async (
+  commentId: string,
+  userId: string,
+  query: Record<string, unknown>
+) => {
+  const userQuery = new QueryBuilder(
+    CommentReply.find({ comment: commentId }),
+    query
+  )
     .paginate()
     // .search(userSearchableField)
     .fields()
     .filter()
-    .sort()
+    .sort();
 
-  const result = await userQuery.modelQuery.populate('creator', 'profile.username profile.firstName profile.lastName profile.image').populate('comment', 'text -_id');
+  const result = await userQuery.modelQuery
+    .populate(
+      'creator',
+      'profile.username profile.firstName profile.lastName profile.image'
+    )
+    .populate('comment', 'text -_id');
 
   // Add isCreator field
   const dataWithIsCreator = result.map((reply: any) => ({
@@ -196,21 +233,19 @@ const getAllCommentReply = async (commentId: string, userId: string, query: Reco
   };
 };
 
-
-
-const deleteCommentReply = async (id: string,userId:string) => {
-  console.log({id,userId})
-  const deletedComment = await CommentReply.findOneAndDelete({_id:id,creator:userId});
+const deleteCommentReply = async (id: string, userId: string) => {
+  const deletedComment = await CommentReply.findOneAndDelete({
+    _id: id,
+    creator: userId,
+  });
   if (!deletedComment) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Comment not found');
   }
-  
+
   return deletedComment;
 };
 
-
 const toggleCommentLike = async (id: string, userId: string) => {
-  console.log({id,userId})
   const comment = await Comment.findById(id);
   if (!comment) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Comment not found');
@@ -234,10 +269,6 @@ const toggleCommentLike = async (id: string, userId: string) => {
   };
 };
 
-
-
-
-
 export const CommentService = {
   createComment,
   updateComment,
@@ -247,5 +278,5 @@ export const CommentService = {
   createCommentReply,
   getAllCommentReply,
   deleteCommentReply,
-  toggleCommentLike
+  toggleCommentLike,
 };

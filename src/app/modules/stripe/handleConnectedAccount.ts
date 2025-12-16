@@ -12,7 +12,6 @@ export const handleConnectedAccount = async (data: Stripe.Account) => {
         logger.info(`User not found for account ID: ${data.id}`);
     }
 
-    console.log(existingUser)
 
     // Check if the onboarding is complete
     if (data.charges_enabled) {

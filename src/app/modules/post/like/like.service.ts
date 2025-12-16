@@ -9,9 +9,13 @@ import { Follower } from '../../user/follower/follower.model';
 import { sendNotification } from '../../../../shared/sendNotification';
 import { IUserNotificationSettings } from '../../user/notificaiton_settings/notifation_sttings.interface';
 import { createNotificationThatYouAreTagged } from '../post.util';
+import { CLUB_NOTIFICATION_OPTION } from '../../club/club_notificaiton_settings/club_notification_settings.constant';
+import { IClubNotificationSettings } from '../../club/club_notificaiton_settings/club_notifation_sttings.interface';
+import { CREATOR_TYPE } from '../post.constant';
+import { Club } from '../../club/club.model';
 const createLike = async (postId: string, userId: string, fcmToken: string) => {
   const like = await Like.create({ post: postId, user: userId });
-  await like.populate('post', 'creator tag_user');
+  await like.populate('post', 'creator tag_user creator_type club');
 
   // NOTIFICATION SECTION
   const creator = (like.post as any).creator;
@@ -46,7 +50,27 @@ const createLike = async (postId: string, userId: string, fcmToken: string) => {
     taggedUsers: tagUsers
   });
 
-  //NOTIFICATION SECTION END
+  // CLUB NOTIFICATION SECTION
+  const post = like.post as any;
+  if (post.creator_type === CREATOR_TYPE.CLUB) {
+    const clubId = post.club;
+    const club = await Club.findById(clubId, '-_id club_notification_settings').populate('club_notification_settings').lean();
+    const notificationSettings = club?.club_notification_settings as IClubNotificationSettings | undefined;
+    const likes_on_your_posts_club = notificationSettings?.likes_on_your_posts;
+    const shouldSendClub = likes_on_your_posts_club === CLUB_NOTIFICATION_OPTION.FROM_EVERYONE;
+
+    if (shouldSendClub) {
+      Notification.create({
+        receiver: clubId,
+        receiver_club: clubId,
+        sender: userId,
+        title: "A user liked on your club's post",
+        refId: postId,
+        deleteReferenceId: like._id,
+        path: `/user/post/like/${like._id}`,
+      });
+    }
+  }
 
 
   return like;
@@ -60,7 +84,6 @@ const deleteLike = async (postId: string, userId: string) => {
     }
   );
 
-  console.log({ like: like?._id, userId });
 
   if (!like) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Like not found');

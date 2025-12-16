@@ -13,6 +13,10 @@ const notificationSchema = new Schema<INotification, INotificationModel>(
             ref: "User",
             default: null
         },
+        receiver_club: {
+            type: Schema.Types.ObjectId,
+            ref: "Club"
+        },
         title: {
             type: String,
             required: true,

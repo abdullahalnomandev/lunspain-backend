@@ -164,8 +164,6 @@ const updateClub = async (
     user: userId,
   }).lean() as IClubMember;
 
-  console.log({ payload })
-
   const clubToUpdate = await Club.findById(club_id).lean();
 
   if (payload.allow_class_cancelation && payload.pre_class_cancelation) {
@@ -511,8 +509,6 @@ const getClubNotificationSettings = async (user: string,clubId:string) => {
   )
     .populate('club_notification_settings')
     .lean();
-
-    console.log({clubId})
 
   return notificationSettings?.club_notification_settings;
 };

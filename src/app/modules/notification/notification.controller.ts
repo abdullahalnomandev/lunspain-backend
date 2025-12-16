@@ -17,6 +17,18 @@ const getMyNotifications = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const club_notification = catchAsync(async (req: Request, res: Response) => {
+  const result = await NotificationService.getClubNOtifications(req.params?.clubId, req.query);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Notifications retrieved successfully',
+    pagination: result.pagination,
+    data: result.data,
+  });
+});
+
 const markAsSeen = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user?.id;
   const { id } = req.params;
@@ -33,4 +45,5 @@ const markAsSeen = catchAsync(async (req: Request, res: Response) => {
 export const NotificationController = {
   getMyNotifications,
   markAsSeen,
+  club_notification
 };
