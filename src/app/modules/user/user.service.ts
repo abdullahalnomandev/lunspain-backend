@@ -95,7 +95,8 @@ const createUserToDB = async (
   if (isValid && createUser && payload.auth_provider === 'local') {
     const createAccountTemplate = emailTemplate.createAccount({
       email: createUser.email,
-      verify_url: `${config.front_end_app_url}/verify?token=${payload.token}`,
+      // verify_url: `${config.front_end_app_url}/verify?token=${payload.token}`,
+      verify_url: `${config.front_end_app_url}?screen=confirm-email&token=${payload.token}`,
     });
     emailHelper.sendEmail(createAccountTemplate);
     return createUser;

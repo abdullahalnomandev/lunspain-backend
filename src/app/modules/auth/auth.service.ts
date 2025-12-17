@@ -131,16 +131,21 @@ const verifyEmailToDB = async (verify_token: string) => {
     }
   );
 
-  //create token
+  // Create token
   const createToken = jwtHelper.createToken(
     { id: isExistUser._id, role: isExistUser.role, email: isExistUser.email },
     config.jwt.jwt_secret as Secret,
     config.jwt.jwt_expire_in as string
   );
 
-  return {
-    data: { accessToken: createToken },
-    message: 'Account successfullay verified.',
+  // Remove sensitive fields
+  const userObj = isExistUser.toObject ? isExistUser.toObject() : { ...isExistUser };
+  if ('password' in userObj) delete (userObj as any)?.password;
+  if ('token' in userObj) delete (userObj as any)?.token;
+
+  return { 
+    data: { data: userObj, accessToken: createToken },
+    message: 'Account successfully verified.'
   };
 };
 
