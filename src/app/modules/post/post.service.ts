@@ -198,7 +198,7 @@ const deletePost = async (userId: string, postId: string) => {
 };
 
 const findById = async (postId: string) => {
-  const post = await Post.findById(postId).lean().populate('creator', 'profile.username  profile.image');
+  const post = await Post.findById(postId).lean().populate('creator', 'profile.username  profile.image').populate('club', 'name image');;
   if (!post) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Post not found');
   }
@@ -265,23 +265,23 @@ const getALlTypeOfpost = async (
 
   switch (postType) {
     case POST_SERCH_TYPE.PHOTO:
-      buildQuery = Post.find({ post_type: POST_TYPE.PHOTO }).populate('creator','profile.image profile.username');
+      buildQuery = Post.find({ post_type: POST_TYPE.PHOTO }).populate('creator', 'profile.image profile.username email bio').populate('club', 'name image');
       searchableField = postSearchableField;
       break;
     case POST_SERCH_TYPE.CLUB:
-      buildQuery = Club.find().populate('club_creator','profile.image profile.username');
+      buildQuery = Club.find().populate('club_creator', 'profile.image profile.username email bio');
       searchableField = clubSearchableField;
       break;
     case POST_SERCH_TYPE.USER:
-      buildQuery = User.find({ _id: { $ne: userId } }).populate('profile.image profile.username');
+      buildQuery = User.find({ _id: { $ne: userId } }).populate('profile.image profile.username email bio');
       searchableField = userSearchableField;
       break;
     case POST_SERCH_TYPE.VIDEO:
-      buildQuery = Post.find({ post_type: POST_TYPE.VIDEO }).populate('creator','profile.image profile.username');
+      buildQuery = Post.find({ post_type: POST_TYPE.VIDEO }).populate('creator', 'profile.image profile.username email bio').populate('club', 'name image');
       searchableField = postSearchableField;
       break;
     case POST_SERCH_TYPE.SKILL:
-      buildQuery = Post.find({post_type:{$ne:POST_TYPE.DRAFTS}}).populate('creator','profile.image profile.username');
+      buildQuery = Post.find({ post_type: {$ne: POST_TYPE.DRAFTS} }).populate('creator', 'profile.image profile.username email bio').populate('club', 'name image');
       searchableField = postSearchableField;
       break;
     default:
@@ -291,67 +291,121 @@ const getALlTypeOfpost = async (
       );
   }
 
+  // Add more fields to select (first query "response") by default
+  // For direct selects not using .fields(), ensure mongoose returns full document objects
+  // Use lean() if you do NOT want mongoose models, but for "more" keep as objects
   const postQueryBuilder = new QueryBuilder(buildQuery, query)
     .paginate()
     .search(searchableField)
-    .fields()
+    .fields() // This can limit fields, but user can ask for all
     .filter()
     .sort();
 
   let posts = await postQueryBuilder.modelQuery;
 
-  if (postType === POST_SERCH_TYPE.CLUB) {
-    posts = await Promise.all(
-      posts.map(async (club: any) => {
-        const memberCount = await ClubMember.countDocuments({
-          club: club._id,
-        });
-        return { ...club.toObject(), club_members: memberCount };
-      })
-    );
+  // For CLUB type, aggregate club member counts in a single query to reduce time complexity
+  if (postType === POST_SERCH_TYPE.CLUB && posts.length > 0) {
+    const clubIds = posts.map((club: any) => club._id);
+    const memberCounts = await ClubMember.aggregate([
+      { $match: { club: { $in: clubIds } } },
+      { $group: { _id: '$club', count: { $sum: 1 } } },
+    ]);
+    const countMap: Record<string, number> = {};
+    memberCounts.forEach(item => { countMap[item._id.toString()] = item.count; });
+    posts = posts.map((club: any) => ({
+      ...club.toObject(),
+      club_members: countMap[club._id.toString()] || 0,
+      // Add more info for "more" query:
+      name: club.name,
+      description: club.description,
+      image: club.image,
+      createdAt: club.createdAt,
+      updatedAt: club.updatedAt,
+      club_creator: club.club_creator ? {
+        _id: club.club_creator._id,
+        profile: club.club_creator.profile,
+        email: club.club_creator.email,
+        bio: club.club_creator.bio
+      } : undefined
+    }));
   }
 
-  if (postType === POST_SERCH_TYPE.USER) {
-    posts = await Promise.all(
-      posts.map(async (user: any) => {
-        const isFollowed = await Follower.findOne({
-          follower: userId,
-          following: user?._id,
-        });
-        return { ...user.toObject(), isFollowed: !!isFollowed };
-      })
-    );
+  // For USER type, aggregate following in a single query to reduce time complexity
+  if (postType === POST_SERCH_TYPE.USER && posts.length > 0) {
+    const userIds = posts.map((user: any) => user._id);
+    const followed = await Follower.find({
+      follower: userId,
+      following: { $in: userIds }
+    }).select('following').lean();
+
+    const followedSet = new Set(followed.map((item: any) => item.following.toString()));
+    posts = posts.map((user: any) => ({
+      ...user.toObject(),
+      isFollowed: followedSet.has(user._id.toString()),
+      // More info
+      username: user.username,
+      email: user.email,
+      bio: user.bio,
+      createdAt: user.createdAt,
+      profile: user.profile
+    }));
   }
 
+  // For PHOTO/VIDEO/SKILL, aggregate comment/like counts and likes in batch
   if (
     postType === POST_SERCH_TYPE.PHOTO ||
     postType === POST_SERCH_TYPE.VIDEO ||
     postType === POST_SERCH_TYPE.SKILL
   ) {
-    posts = await Promise.all(
-      posts.map(async (post: any) => {
+    const postIds = posts.map((post: any) => post._id);
 
-        const [commentOfPost, likeOfPost, isLiked] = await Promise.all([
-          Comment.countDocuments({ post: post._id }).lean().exec(),
-          Like.countDocuments({ post: post._id }).lean().exec(),
-          Like.exists({ user: userId, post: post._id }).lean().exec(),
-        ]);
+    // Aggregate comment counts
+    const commentsAgg = await Comment.aggregate([
+      { $match: { post: { $in: postIds } } },
+      { $group: { _id: '$post', count: { $sum: 1 } } }
+    ]);
+    const commentCountMap: Record<string, number> = {};
+    commentsAgg.forEach(item => { commentCountMap[item._id.toString()] = item.count; });
 
-        const isCreator = post?.creator?._id?.toString() === userId;
-        const createdAt = new Date(post.createdAt).getTime();
-        const now = Date.now();
-        const thirtyMinutes = 30 * 60 * 1000;
-        const isEditable = isCreator && now - createdAt <= thirtyMinutes;
-        return {
-          ...post.toObject(),
-          commentOfPost,
-          likeOfPost,
-          isCreator: post.creator?._id.toString() === userId,
-          hasLiked: !!isLiked,
-          editable: isEditable
-        };
-      })
-    );
+    // Aggregate like counts
+    const likesAgg = await Like.aggregate([
+      { $match: { post: { $in: postIds } } },
+      { $group: { _id: '$post', count: { $sum: 1 } } }
+    ]);
+    const likeCountMap: Record<string, number> = {};
+    likesAgg.forEach(item => { likeCountMap[item._id.toString()] = item.count; });
+
+    // Find all liked posts by user in batch
+    const liked = await Like.find({
+      user: userId,
+      post: { $in: postIds }
+    }).select('post').lean();
+    const likedSet = new Set(liked.map((l: any) => l.post.toString()));
+
+    posts = posts.map((post: any) => {
+      const isCreator = post?.creator?._id?.toString() === userId;
+      const createdAt = new Date(post.createdAt).getTime();
+      const now = Date.now();
+      const thirtyMinutes = 30 * 60 * 1000;
+      const isEditable = isCreator && now - createdAt <= thirtyMinutes;
+      // Add more post info for "more" response
+      return {
+        ...post.toObject(),
+        commentOfPost: commentCountMap[post._id.toString()] || 0,
+        likeOfPost: likeCountMap[post._id.toString()] || 0,
+        isCreator: post.creator?._id?.toString() === userId,
+        hasLiked: likedSet.has(post._id.toString()),
+        editable: isEditable,
+        caption: post.caption,
+        media: post.media,
+        tags: post.tags,
+        club: post.club,
+        creator: post.creator,
+        post_type: post.post_type,
+        createdAt: post.createdAt,
+        updatedAt: post.updatedAt
+      };
+    });
   }
 
   const pagination = await postQueryBuilder.getPaginationInfo();
@@ -359,8 +413,117 @@ const getALlTypeOfpost = async (
   return {
     pagination,
     data: posts,
+    // Add the "raw" output before transformations (e.g. in case you want to see the direct Mongoose result)
+    // raw: resultBeforeTransform, // Uncomment if needed for deeper debugging
+    total: pagination ? pagination.total : posts.length // Explicit total count, more info in response
   };
 };
+// const getALlTypeOfpost = async (
+//   postType: string,
+//   userId: string,
+//   query: Record<string, any>
+// ) => {
+//   let buildQuery: any;
+//   let searchableField: string[];
+
+//   switch (postType) {
+//     case POST_SERCH_TYPE.PHOTO:
+//       buildQuery = Post.find({ post_type: POST_TYPE.PHOTO }).populate('creator', 'profile.image profile.username').populate('club', 'name image');
+//       searchableField = postSearchableField;
+//       break;
+//     case POST_SERCH_TYPE.CLUB:
+//       buildQuery = Club.find().populate('club_creator','profile.image profile.username');
+//       searchableField = clubSearchableField;
+//       break;
+//     case POST_SERCH_TYPE.USER:
+//       buildQuery = User.find({ _id: { $ne: userId } }).populate('profile.image profile.username');
+//       searchableField = userSearchableField;
+//       break;
+//     case POST_SERCH_TYPE.VIDEO:
+//       buildQuery = Post.find({ post_type: POST_TYPE.VIDEO }).populate('creator','profile.image profile.username');
+//       searchableField = postSearchableField;
+//       break;
+//     case POST_SERCH_TYPE.SKILL:
+//       buildQuery = Post.find({post_type:{$ne:POST_TYPE.DRAFTS}}).populate('creator','profile.image profile.username').populate('club', 'name image');;
+//       searchableField = postSearchableField;
+//       break;
+//     default:
+//       throw new ApiError(
+//         StatusCodes.BAD_REQUEST,
+//         `Invalid post type. Provide (${POST_SERCH_TYPE.PHOTO} or ${POST_SERCH_TYPE.CLUB} or ${POST_SERCH_TYPE.USER} or ${POST_SERCH_TYPE.VIDEO} or ${POST_SERCH_TYPE.SKILL} ) `
+//       );
+//   }
+
+//   const postQueryBuilder = new QueryBuilder(buildQuery, query)
+//     .paginate()
+//     .search(searchableField)
+//     .fields()
+//     .filter()
+//     .sort();
+
+//   let posts = await postQueryBuilder.modelQuery;
+
+//   if (postType === POST_SERCH_TYPE.CLUB) {
+//     posts = await Promise.all(
+//       posts.map(async (club: any) => {
+//         const memberCount = await ClubMember.countDocuments({
+//           club: club._id,
+//         });
+//         return { ...club.toObject(), club_members: memberCount };
+//       })
+//     );
+//   }
+
+//   if (postType === POST_SERCH_TYPE.USER) {
+//     posts = await Promise.all(
+//       posts.map(async (user: any) => {
+//         const isFollowed = await Follower.findOne({
+//           follower: userId,
+//           following: user?._id,
+//         });
+//         return { ...user.toObject(), isFollowed: !!isFollowed };
+//       })
+//     );
+//   }
+
+//   if (
+//     postType === POST_SERCH_TYPE.PHOTO ||
+//     postType === POST_SERCH_TYPE.VIDEO ||
+//     postType === POST_SERCH_TYPE.SKILL
+//   ) {
+//     posts = await Promise.all(
+//       posts.map(async (post: any) => {
+
+//         const [commentOfPost, likeOfPost, isLiked] = await Promise.all([
+//           Comment.countDocuments({ post: post._id }).lean().exec(),
+//           Like.countDocuments({ post: post._id }).lean().exec(),
+//           Like.exists({ user: userId, post: post._id }).lean().exec(),
+//         ]);
+
+//         const isCreator = post?.creator?._id?.toString() === userId;
+//         const createdAt = new Date(post.createdAt).getTime();
+//         const now = Date.now();
+//         const thirtyMinutes = 30 * 60 * 1000;
+//         const isEditable = isCreator && now - createdAt <= thirtyMinutes;
+//         return {
+//           ...post.toObject(),
+//           commentOfPost,
+//           likeOfPost,
+//           isCreator: post.creator?._id.toString() === userId,
+//           hasLiked: !!isLiked,
+//           editable: isEditable
+//         };
+//       })
+//     );
+//   }
+
+//   const pagination = await postQueryBuilder.getPaginationInfo();
+
+//   return {
+//     pagination,
+//     data: posts,
+//   };
+// };
 
 dayjs.extend(isToday);
 dayjs.extend(isYesterday);

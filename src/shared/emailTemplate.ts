@@ -6247,7 +6247,9 @@ table.center-on-narrow { display: inline-block !important; }
                                     <table align="left" border="0" cellpadding="0" cellspacing="0">
                                         <tr>
                                             <td style="display: inline-block; padding: 15px 45px; background: #36c9b8; text-align: center; font-family:'Poppins', sans-serif; font-size: 18px; font-weight: 500; line-height: 16px; color:#11273b; text-transform: inherit; border-radius: 10px; border: 2px solid #a4d7c5;" width="auto">
-                                                <a href="${config.front_end_app_url}/accept-class?classRef=${classBookingRefId}" target="_blank" style="color:#11273b;font-weight:500;text-decoration: none; display: block;font-size:18px;">
+                                                <a href="${
+                                                  config.front_end_app_url
+                                                }/accept-class?classRef=${classBookingRefId}" target="_blank" style="color:#11273b;font-weight:500;text-decoration: none; display: block;font-size:18px;">
                                                     Accept space
                                                 </a>
                                             </td>
@@ -6264,7 +6266,9 @@ table.center-on-narrow { display: inline-block !important; }
                             <tr>
                                 <td width="100%" valign="top" align="left" style="margin: 0px;padding: 0px;color:#50606f;font-size: 13px; line-height: 26px; font-weight: 400; font-family:'Poppins', sans-serif; text-transform: inherit;">
                                     If the button above does not work, copy the below URL into your web browser: <br>
-                                    <a href="#" style="color:#5B88E8; text-decoration: underline;">${config.front_end_app_url}/accept-class?classRef=${classBookingRefId}</a>
+                                    <a href="#" style="color:#5B88E8; text-decoration: underline;">${
+                                      config.front_end_app_url
+                                    }/accept-class?classRef=${classBookingRefId}</a>
                                 </td>
                             </tr>
                             
@@ -6325,36 +6329,37 @@ table.center-on-narrow { display: inline-block !important; }
 																			<td width="300" align="left" valign="top" style="margin:0px;padding-left: 10px;font-size:16px;font-family: 'Poppins', sans-serif;text-transform:inherit;font-weight: 600;color: #000000;" height="50">
 																				${classInfo.class_name} <br>
 																				${new Date(classInfo.date_of_class)
-																					.toLocaleDateString('en-GB', {
-																						day: 'numeric',
-																						month: 'short',
-																						year: 'numeric',
-																					})
-																					.replace(/ /g, ' ')
-																				} <br>
-																				${
-																					(() => {
-																						const [hours, minutes] = classInfo.start_time.split(':');
-																						const date = new Date();
-																						date.setHours(parseInt(hours, 10));
-																						date.setMinutes(parseInt(minutes, 10));
-																						// Format to 12-hour time with AM/PM
-																						return date.toLocaleTimeString('en-US', {
-																							hour: 'numeric',
-																							minute: '2-digit',
-																							hour12: true,
-																						});
-																					})()
-																				}
+                                          .toLocaleDateString('en-GB', {
+                                            day: 'numeric',
+                                            month: 'short',
+                                            year: 'numeric',
+                                          })
+                                          .replace(/ /g, ' ')} <br>
+																				${(() => {
+                                          const [hours, minutes] =
+                                            classInfo.start_time.split(':');
+                                          const date = new Date();
+                                          date.setHours(parseInt(hours, 10));
+                                          date.setMinutes(
+                                            parseInt(minutes, 10)
+                                          );
+                                          // Format to 12-hour time with AM/PM
+                                          return date.toLocaleTimeString(
+                                            'en-US',
+                                            {
+                                              hour: 'numeric',
+                                              minute: '2-digit',
+                                              hour12: true,
+                                            }
+                                          );
+                                        })()}
 																				- <span style="font-size: 15px; font-weight: 400;">${classInfo.duration}</span>
 																			</td>
 																			
 																			<td class="display-block padding" width="150" align="center" valign="top" height="50"></td>
 																			
 																			<td width="300" align="right" valign="top" style="margin:0px;padding-right: 10px;font-size:16px;font-family: 'Poppins', sans-serif;text-transform:inherit;font-weight: 400;color: #000000;" height="50">
-																				Booking ID: <span style="font-size: 15px; font-weight: 700;">${
-																					bookingId
-																				}</span> <br>
+																				Booking ID: <span style="font-size: 15px; font-weight: 700;">${bookingId}</span> <br>
 																				Class Total: <span style="font-size: 15px; font-weight: 700;">
 																					${(classInfo.const_per_ticket + 0.45).toFixed(2)}
 																				</span><br>
@@ -6405,7 +6410,9 @@ table.center-on-narrow { display: inline-block !important; }
 																			<td class="display-block padding" width="20" align="center" valign="top" height="50"></td>
 
 																			<td width="250" align="right" valign="top" style="margin:0px;padding-right:10px;font-size:16px;font-family: 'Poppins', sans-serif;text-transform:inherit;font-weight: normal;color: #000000;" height="50">
-                                                                                ${classInfo.location}
+                                                                                ${
+                                                                                  classInfo.location
+                                                                                }
                                                                             </td>
 																		</tr>
 
@@ -6613,10 +6620,526 @@ const RequestToCloseClub = (email: string) => {
     to: email,
     subject: 'Request to close club',
     html: `
-    <body>
-    <h1>Request to close club</h1>
-    <p>You have requested to close your club. We will close your club after 48 hours if you do not provide marketing permission.</p>
-    </body>
+ <!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title></title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+
+<!-- jQuery Plugin -->
+
+<style type="text/css">
+div, p, a, li, td {
+    -webkit-text-size-adjust: none;
+    font-family: 'Poppins', sans-serif;
+}
+
+img {
+    display: block;
+}
+table {
+    mso-table-lspace: 0pt !important;
+    mso-table-rspace: 0pt !important;
+}
+a {
+    text-decoration: none;
+    font-family: 'Poppins', sans-serif;
+    color: inherit;
+    display: inline-block;
+}
+p {
+    margin: 0px;
+    padding: 0px;
+    font-family: 'Poppins', sans-serif;
+}
+</style>
+<style type="text/css">
+@media only screen and (max-width: 920px) {
+.width_100 {
+    width: 100%;
+    max-width: 100%;
+}
+.tpl-content {
+    padding: 0px !important;
+}
+img {
+    max-width: 100%;
+    height: auto;
+}
+.width_50percent {
+    max-width: 50%;
+    margin: 0 auto !important;
+    width: 50% !important;
+}
+}
+</style>
+
+<style type="text/css">
+@media only screen and (max-width: 720px) {
+.width_100 {
+    width: 100%;
+    max-width: 100%;
+}
+img {
+    max-width: 100%;
+    height: auto;
+}
+.tablet-resp-block {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+}
+.tablet-resp-erase {
+    display: none !important;
+    height: 0px !important;
+}
+.width_50percent {
+    max-width: 100%;
+    display: block !important;
+    height: auto !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+}
+}
+</style>
+
+<style type="text/css">
+@media only screen and (max-width: 620px) {
+.border-none {
+    border:none !important;
+}
+.padding-top-bottom {
+    padding: 20px 0px;
+}
+.height-and-padding-bottom {
+    height: auto;
+    padding-bottom: 20px !important;
+}
+.width_90percent {
+    width: 90% !important;
+    max-width: 90%;
+    margin: 0 auto !important;
+    height: auto!important;
+}
+.display-block {
+    display: block !important;
+    height: auto !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+}
+.width_90percent .width_100percent {
+    width: 100% !important;
+    height: auto;
+    display: block;
+    margin: 0 auto !important;
+}
+.width_100percent {
+    width: 100% !important;
+    height: auto;
+    margin: 0 auto !important;
+}
+.tbody-and-tr {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+}
+.padding-top {
+    padding-top: 10px;
+}
+.padding {
+    padding: 10px 0px;
+}
+
+.padding {
+    padding: 10px 0px;
+}
+
+.padding-15 {
+    padding: 15px 0px;
+}
+
+.padding-20 {
+    padding: 20px 0px;
+}
+
+.padding-25 {
+    padding: 25px 0px;
+}
+
+.padding-30 {
+    padding: 30px 0px;
+}
+
+.padding-35 {
+    padding: 35px 0px;
+}
+
+.padding-40 {
+    padding: 40px 0px;
+}
+
+.padding-50 {
+    padding: 40px 0px;
+}
+
+.logo-outer {
+    text-align: center;
+}
+.padding-top-60 {
+    padding-top: 60px !important;
+    height: auto;
+    display: block;
+}
+.padding-bottom-60 {
+    padding-bottom: 60px !important;
+    height: auto;
+    display: block;
+}
+.img-center img {
+    margin: 0 auto !important;
+}
+.erase {
+    display: none;
+    height: 0px;
+}
+.text-center {
+    float: none !important;
+    text-align: center;
+    text-align: -webkit-center;
+}
+.text-left {
+    float: none !important;
+    text-align: left;
+    text-align: -webkit-left;
+}
+.text-right {
+    float: none !important;
+    text-align: right;
+    text-align: -webkit-right;
+}
+.hero-section-font-1 {
+    font-size: 24px !important;
+    line-height: normal !important;
+    letter-spacing: normal !important
+}
+.hero-section-font-2 {
+    font-size: 36px !important;
+    line-height: normal !important;
+    letter-spacing: normal !important
+}
+.res-font-white {
+    color: #FFFFFF !important;
+}
+.full-width-img img {
+    width: 100%;
+    height: auto;
+}
+.resp-remove-bg {
+    background: #333333 !important;
+}
+.background-img {
+    background-image: none !important;
+}
+.background-cover {
+    background-size: cover !important;
+}
+.block-with-height {
+    display: inline-block;
+    width: 100%;
+}
+.inline-block {
+    display: inline-block;
+}
+.left-right-pad {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+}
+.padding-zero {
+    padding: 0px 0px 0px 0px !important;
+}
+
+.center-on-narrow { text-align: center !important; display: block !important; margin-left: auto !important; margin-right: auto !important; float: none !important; width: auto!important; }
+table.center-on-narrow { display: inline-block !important; }
+}
+</style>
+
+<style type="text/css">
+@media only screen and (max-width: 420px) {
+.menu {
+    font-size: 12px !important;
+}
+.display-block-mob {
+    display: block !important;
+    height: auto !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+}
+
+.resp-menu {
+    font-size: 10px !important;
+    font-weight: bold !important;
+}
+.side-border {
+    border: 1px solid #5a5a5a !important;
+    border-left: 0px !important;
+    border-right: 0px !important;
+}
+}
+</style>
+</head>
+<body style="margin:0px; padding:0px; background: #351a57 !important;">
+
+<!-- Section-0 (2-col-Text) -->
+<table class="width_100" align="center" border="0" cellpadding="0" cellspacing="0" width="700" style="border-collapse:collapse;" bgcolor="#351a57">
+    <tbody>
+        <tr>
+            <td width="100%" align="center" valign="top">
+                <table class="width_90percent" align="center" border="0" cellpadding="0" width="700" cellspacing="0" style="border-collapse:collapse;">
+                    <tbody>
+                        
+                        <tr>
+                            <td width="100%" height="40" style="line-height:1px;" class="display-block padding"></td>
+                        </tr>											
+
+                        <tr>
+                            <td width="100%" align="center" valign="middle">
+                                <table align="center" border="0" cellpadding="0" width="100%" cellspacing="0" style="border-collapse: collapse;">
+                                    <tbody>
+                                        <tr>
+                                            <td class="display-block" width="280" align="center" valign="top">
+                                                <table align="center" border="0" cellpadding="0" width="100%" cellspacing="0" style="border-collapse: collapse;">
+                                                    <tbody>
+
+                                                         <tr>
+                                                             <td class="text-center display-block" width="180" valign="top" align="left" style="line-height:1px;">
+                                                                <a href="https://www.lunaspin.app/?utm_source=app&utm_medium=email&utm_campaign=header" target="_blank" style="text-decoration: none;">
+                                                                    <img src="http://cdn.mcauto-images-production.sendgrid.net/79fcc5d8494d7892/be9f6854-34cb-48f4-add5-f94d61b5b4f9/289x101.png" border="0" width="180" height="auto" alt="img" style="display:block;">
+                                                                </a>
+                                                             </td>
+                                                         </tr>
+                                                        
+                                                    </tbody>
+                                                </table>
+                                            </td>
+
+                                            <td class="display-block padding" width="40" style="line-height:1px;"></td>
+
+                                            <td class="display-block" width="280" align="center" valign="middle">
+                                                <table align="center" border="0" cellpadding="0" width="100%" cellspacing="0" style="border-collapse: collapse;">
+                                                    <tbody>
+                                                         
+                                                         <tr>
+                                                            <td class="text-center" width="100%" align="right" valign="middle" style="margin:0px;padding:0px;color: #FFFFFF;font-family: 'Poppins',sans-serif;font-size:16px;line-height: 24px;font-weight: 400;">
+                                                                <a href="https://www.lunaspin.app/articles/?utm_source=app&utm_medium=email&utm_campaign=header" target="_blank" style="color: #FFFFFF;text-decoration: none;">News & Stories</a>
+                                                            </td>
+                                                        </tr>	
+                                                        
+                                                    </tbody>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+
+
+                        <tr>
+                            <td width="100%" height="20" style="line-height:1px;" class="display-block padding"></td>
+                        </tr>
+
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<!-- End-Section-0 (2-col-Text) -->
+
+<!-- Section-0 (Fluid-Banner) -->
+<table class="width_100" align="center" border="0" cellpadding="0" cellspacing="0" bgcolor="#ffffff" width="700" style="border-collapse:collapse;border-top-left-radius: 15px; border-top-right-radius: 15px;">
+    <tbody>
+        <tr>
+            <td width="100%" align="center" valign="top">
+                <table class="width_100percent" align="center" border="0" cellpadding="0" width="700" cellspacing="0" style="border-collapse:collapse;">
+                    <tbody>
+                        <tr>
+                            <td class="display-block" width="700" valign="middle" align="center" style="line-height:1px;">
+                                <img src="http://cdn.mcauto-images-production.sendgrid.net/79fcc5d8494d7892/fd1626c2-3592-4e58-8dc0-696b34a3e425/1200x200.jpg" border="0" width="700" height="auto" alt="" style="display:block;border-top-left-radius: 15px; border-top-right-radius: 15px;">
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<!-- End-Section-0 (Fluid-Banner) -->
+
+<!-- Section-0 (Text-Content) -->
+<table class="width_100" align="center" border="0" cellpadding="0" cellspacing="0" width="700" style="border-collapse:collapse;border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;" bgcolor="#ffffff">
+    <tbody>
+        <tr>
+            <td width="100%" align="center" valign="middle">
+                <div style="margin:0 auto">
+                    <table class="width_90percent" align="center" border="0" cellpadding="0" width="600" cellspacing="0" style="border-collapse: collapse;">
+                        <tbody>
+                            <tr>
+                                <td width="100%" height="40" style="line-height:1px;" class="display-block padding"></td>
+                            </tr>
+
+                            <tr>
+                                <td width="100%" valign="top" align="left" style="margin: 0px;padding: 0px;color:#11273b;font-size:36px; line-height: 46px; font-weight: 600; font-family:'Poppins', sans-serif; text-transform: inherit;">
+                                    Request to close your club
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td width="100%" height="10" style="line-height:1px;"></td>
+                            </tr>
+                            
+                            <tr>
+                                <td width="100%" valign="top" align="left" style="margin: 0px;padding: 0px;color:#11273b;font-size: 16px; line-height: 26px; font-weight: 400; font-family:'Poppins', sans-serif; text-transform: inherit;">
+                                    Your request to close club <strong>[CLUB-NAME]</strong> has been submitted.
+                                </td>
+                            </tr>	
+                            
+                            <tr>
+                                <td width="100%" height="20" style="line-height:1px;" class="display-block padding"></td>
+                            </tr>
+
+
+                            <tr>
+                                <td width="100%" valign="top" align="left" style="margin: 0px;padding: 0px;color:#11273b;font-size: 16px; line-height: 26px; font-weight: 400; font-family:'Poppins', sans-serif; text-transform: inherit;">
+                                    Closure requests may take up to 48 hours to process. You'll receive an confirmation email once this has been complete.
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td width="100%" height="20" style="line-height:1px;" class="display-block padding"></td>
+                            </tr>
+
+                            <tr>
+                                <td width="100%" valign="top" align="left" style="margin: 0px;padding: 0px;color:#50606f;font-size: 13px; line-height: 26px; font-weight: 400; font-family:'Poppins', sans-serif; text-transform: inherit;">
+                                    If you didn't request a club closure, <a href="https://www.lunaspin.app/contact/?utm_source=app&utm_medium=email&utm_campaign=club_preclosure" style="color:#5B88E8; text-decoration: underline;">contact our support team</a> immediately!
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td width="100%" height="30" style="line-height:1px;" class="display-block padding"></td>
+                            </tr>
+
+                            <tr>
+                                <td width="100%" align="left" valign="top" style="margin:0px;padding:0px;color:#000000;font-family: 'Poppins', sans-serif; font-size:24px; line-height: 30px; font-weight:600;">
+                                    Keep going!<br>
+                                    <span style="font-size: 18px; font-weight: 500;">LunaSpin Team</span>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td width="100%" height="30" style="line-height:1px;" class="display-block padding"></td>
+                            </tr>    
+
+                        </tbody>
+                    </table>
+                </div>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<!-- Section-0 (Text-Content)  End-->
+ 
+<!-- Section-0 (Text-Content) -->
+<table class="width_100" align="center" border="0" cellpadding="0" cellspacing="0" width="700" style="border-collapse:collapse;" bgcolor="#351a57">
+    <tbody>
+        <tr>
+            <td width="100%" align="center" valign="middle">
+                <div style="margin:0 auto">
+                    <table class="width_90percent" align="center" border="0" cellpadding="0" width="700" cellspacing="0" style="border-collapse: collapse;">
+                        <tbody>
+                            <tr>
+                                <td width="100%" height="40" style="line-height:1px;" class="display-block padding"></td>
+                            </tr>
+
+                            <!-- border bg -->
+                            <tr>
+                                <td width="100%" align="center" valign="middle" style="border-bottom: 1px solid #d7cadd; line-height: 1px;">
+                                </td>
+                            </tr>
+                            <!-- End border bg -->
+
+                            <tr>
+                                <td width="100%" height="10" style="line-height:1px;"></td>
+                            </tr>
+
+                            <tr>
+                                <td width="100%" valign="top" align="left" style="margin: 0px;padding: 0px;color:#d7cadd;font-size: 13px; line-height: 26px; font-weight: 400; font-family:'Poppins', sans-serif; text-transform: inherit;">
+                                    You have received this email because you have an account with LunaSpin.app
+                                </td>
+                            </tr>	
+                            
+                            <tr>
+                                <td width="100%" height="10" style="line-height:1px;"></td>
+                            </tr>
+
+                            <!-- border bg -->
+                            <tr>
+                                <td width="100%" align="center" valign="middle" style="border-bottom: 1px solid #d7cadd; line-height: 1px;">
+                                </td>
+                            </tr>
+                            <!-- End border bg -->
+
+                            <tr>
+                                <td width="100%" height="10" style="line-height:1px;"></td>
+                            </tr>
+
+                            <tr>
+                                <td width="100%" align="left" valign="top" style="margin:0;padding:10px 0px 0px 0px;color:#d7cadd;font-family: 'Poppins', sans-serif; font-size:18px; line-height: 24px; font-weight:600;">
+                                    <a href="https://shop.lunaspin.app/?utm_source=app&utm_medium=email&utm_campaign=footer" target="_blank"><img src="http://cdn.mcauto-images-production.sendgrid.net/79fcc5d8494d7892/0ca954d6-0350-47d8-a945-c80e0654ef3c/50x50.png" border="0" width="25" height="25" alt="" style="display:inline;margin-bottom:-5px;"> Shop</a><span>&nbsp;&nbsp;&nbsp;&nbsp;</span><a href="https://www.lunaspin.app/contact?utm_source=app&utm_medium=email&utm_campaign=footer" target="_blank"><img src="http://cdn.mcauto-images-production.sendgrid.net/79fcc5d8494d7892/0ca954d6-0350-47d8-a945-c80e0654ef3c/50x50.png" border="0" width="25" height="25" alt="" style="display:inline;margin-bottom:-5px;"> Contact Us</a><span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                                    <a href="https://www.lunaspin.app/privacy?utm_source=app&utm_medium=email&utm_campaign=footer" target="_blank"><img src="http://cdn.mcauto-images-production.sendgrid.net/79fcc5d8494d7892/0ca954d6-0350-47d8-a945-c80e0654ef3c/50x50.png" border="0" width="25" height="25" alt="" style="display:inline;margin-bottom:-5px;"> Privacy Policy</a><span>&nbsp;&nbsp;&nbsp;&nbsp;</span><a href="https://www.lunaspin.app/terms?utm_source=app&utm_medium=email&utm_campaign=footer" target="_blank"><img src="http://cdn.mcauto-images-production.sendgrid.net/79fcc5d8494d7892/0ca954d6-0350-47d8-a945-c80e0654ef3c/50x50.png" border="0" width="25" height="25" alt="" style="display:inline;margin-bottom:-5px;"> Terms of Use</a>
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td width="100%" height="20" style="line-height:1px;" class="display-block padding"></td>
+                            </tr> 
+                            
+                            <tr>
+                                <td class="text-center" width="100%" align="left" valign="top" style="margin:0px;padding:0px;color:#d7cadd;font-family: 'Poppins', sans-serif; font-size:24px; line-height:30px; font-weight:700;">
+                                    DISCOVER & INSPIRE AT <br>
+                                    LUNASPIN.APP
+                                </td>
+                            </tr>
+
+                                                        
+                            <tr>
+                                <td width="100%" height="20" style="line-height:1px;" class="display-block padding"></td>
+                            </tr> 
+
+                            <tr>
+                                <td class="text-center" width="100%" align="left" valign="top" style="margin:0px;padding:0px;color:#d7cadd;font-family: 'Poppins', sans-serif; font-size:13px; line-height:25px; font-weight:400;">
+                                    ${new Date().getFullYear()} Drip Fed Ltd t/a LunaSpin App. All rights reserved
+                                </td>
+                            </tr>
+
+
+                            <tr>
+                                <td width="100%" height="40" style="line-height:1px;" class="display-block padding"></td>
+                            </tr>
+
+                        </tbody>
+                    </table>
+                </div>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<!-- Section-0 (Text-Content)  End-->
+
+</body>
+</html>
   `,
   };
 };
@@ -6624,13 +7147,528 @@ const RequestToCloseClub = (email: string) => {
 const AccountClosedNotificaiton = (email: string) => {
   return {
     to: email,
-    subject: 'Account closed',
+    subject: 'Request to close your account',
     html: `
-    <body>
-    <h1>Account closed</h1>
-    <p>Your account has been closed. If you have any questions, please contact us.</p>
-    </body>
-  `,
+    <!doctype html>
+   <html>
+   <head>
+   <meta charset="utf-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title></title>
+   <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+   
+   <!-- jQuery Plugin -->
+   
+   <style type="text/css">
+   div, p, a, li, td {
+       -webkit-text-size-adjust: none;
+       font-family: 'Poppins', sans-serif;
+   }
+   
+   img {
+       display: block;
+   }
+   table {
+       mso-table-lspace: 0pt !important;
+       mso-table-rspace: 0pt !important;
+   }
+   a {
+       text-decoration: none;
+       font-family: 'Poppins', sans-serif;
+       color: inherit;
+       display: inline-block;
+   }
+   p {
+       margin: 0px;
+       padding: 0px;
+       font-family: 'Poppins', sans-serif;
+   }
+   </style>
+   <style type="text/css">
+   @media only screen and (max-width: 920px) {
+   .width_100 {
+       width: 100%;
+       max-width: 100%;
+   }
+   .tpl-content {
+       padding: 0px !important;
+   }
+   img {
+       max-width: 100%;
+       height: auto;
+   }
+   .width_50percent {
+       max-width: 50%;
+       margin: 0 auto !important;
+       width: 50% !important;
+   }
+   }
+   </style>
+   
+   <style type="text/css">
+   @media only screen and (max-width: 720px) {
+   .width_100 {
+       width: 100%;
+       max-width: 100%;
+   }
+   img {
+       max-width: 100%;
+       height: auto;
+   }
+   .tablet-resp-block {
+       display: block !important;
+       width: 100% !important;
+       height: auto !important;
+   }
+   .tablet-resp-erase {
+       display: none !important;
+       height: 0px !important;
+   }
+   .width_50percent {
+       max-width: 100%;
+       display: block !important;
+       height: auto !important;
+       margin: 0 auto !important;
+       width: 100% !important;
+   }
+   }
+   </style>
+   
+   <style type="text/css">
+   @media only screen and (max-width: 620px) {
+   .border-none {
+       border:none !important;
+   }
+   .padding-top-bottom {
+       padding: 20px 0px;
+   }
+   .height-and-padding-bottom {
+       height: auto;
+       padding-bottom: 20px !important;
+   }
+   .width_90percent {
+       width: 90% !important;
+       max-width: 90%;
+       margin: 0 auto !important;
+       height: auto!important;
+   }
+   .display-block {
+       display: block !important;
+       height: auto !important;
+       margin: 0 auto !important;
+       width: 100% !important;
+   }
+   .width_90percent .width_100percent {
+       width: 100% !important;
+       height: auto;
+       display: block;
+       margin: 0 auto !important;
+   }
+   .width_100percent {
+       width: 100% !important;
+       height: auto;
+       margin: 0 auto !important;
+   }
+   .tbody-and-tr {
+       display: block !important;
+       width: 100% !important;
+       height: auto !important;
+   }
+   .padding-top {
+       padding-top: 10px;
+   }
+   .padding {
+       padding: 10px 0px;
+   }
+   
+   .padding {
+       padding: 10px 0px;
+   }
+   
+   .padding-15 {
+       padding: 15px 0px;
+   }
+   
+   .padding-20 {
+       padding: 20px 0px;
+   }
+   
+   .padding-25 {
+       padding: 25px 0px;
+   }
+   
+   .padding-30 {
+       padding: 30px 0px;
+   }
+   
+   .padding-35 {
+       padding: 35px 0px;
+   }
+   
+   .padding-40 {
+       padding: 40px 0px;
+   }
+   
+   .padding-50 {
+       padding: 40px 0px;
+   }
+   
+   .logo-outer {
+       text-align: center;
+   }
+   .padding-top-60 {
+       padding-top: 60px !important;
+       height: auto;
+       display: block;
+   }
+   .padding-bottom-60 {
+       padding-bottom: 60px !important;
+       height: auto;
+       display: block;
+   }
+   .img-center img {
+       margin: 0 auto !important;
+   }
+   .erase {
+       display: none;
+       height: 0px;
+   }
+   .text-center {
+       float: none !important;
+       text-align: center;
+       text-align: -webkit-center;
+   }
+   .text-left {
+       float: none !important;
+       text-align: left;
+       text-align: -webkit-left;
+   }
+   .text-right {
+       float: none !important;
+       text-align: right;
+       text-align: -webkit-right;
+   }
+   .hero-section-font-1 {
+       font-size: 24px !important;
+       line-height: normal !important;
+       letter-spacing: normal !important
+   }
+   .hero-section-font-2 {
+       font-size: 36px !important;
+       line-height: normal !important;
+       letter-spacing: normal !important
+   }
+   .res-font-white {
+       color: #FFFFFF !important;
+   }
+   .full-width-img img {
+       width: 100%;
+       height: auto;
+   }
+   .resp-remove-bg {
+       background: #333333 !important;
+   }
+   .background-img {
+       background-image: none !important;
+   }
+   .background-cover {
+       background-size: cover !important;
+   }
+   .block-with-height {
+       display: inline-block;
+       width: 100%;
+   }
+   .inline-block {
+       display: inline-block;
+   }
+   .left-right-pad {
+       padding-left: 10px !important;
+       padding-right: 10px !important;
+   }
+   .padding-zero {
+       padding: 0px 0px 0px 0px !important;
+   }
+   
+   .center-on-narrow { text-align: center !important; display: block !important; margin-left: auto !important; margin-right: auto !important; float: none !important; width: auto!important; }
+   table.center-on-narrow { display: inline-block !important; }
+   }
+   </style>
+   
+   <style type="text/css">
+   @media only screen and (max-width: 420px) {
+   .menu {
+       font-size: 12px !important;
+   }
+   .display-block-mob {
+       display: block !important;
+       height: auto !important;
+       margin: 0 auto !important;
+       width: 100% !important;
+   }
+   
+   .resp-menu {
+       font-size: 10px !important;
+       font-weight: bold !important;
+   }
+   .side-border {
+       border: 1px solid #5a5a5a !important;
+       border-left: 0px !important;
+       border-right: 0px !important;
+   }
+   }
+   </style>
+   </head>
+   <body style="margin:0px; padding:0px; background: #351a57 !important;">
+   <!-- Section-0 (2-col-Text) -->
+   <table class="width_100" align="center" border="0" cellpadding="0" cellspacing="0" width="700" style="border-collapse:collapse;" bgcolor="#351a57">
+       <tbody>
+           <tr>
+               <td width="100%" align="center" valign="top">
+                   <table class="width_90percent" align="center" border="0" cellpadding="0" width="700" cellspacing="0" style="border-collapse:collapse;">
+                       <tbody>
+                           
+                           <tr>
+                               <td width="100%" height="40" style="line-height:1px;" class="display-block padding"></td>
+                           </tr>											
+   
+                           <tr>
+                               <td width="100%" align="center" valign="middle">
+                                   <table align="center" border="0" cellpadding="0" width="100%" cellspacing="0" style="border-collapse: collapse;">
+                                       <tbody>
+                                           <tr>
+                                               <td class="display-block" width="280" align="center" valign="top">
+                                                   <table align="center" border="0" cellpadding="0" width="100%" cellspacing="0" style="border-collapse: collapse;">
+                                                       <tbody>
+   
+                                                            <tr>
+                                                                <td class="text-center display-block" width="180" valign="top" align="left" style="line-height:1px;">
+                                                                   <a href="https://www.lunaspin.app/?utm_source=app&utm_medium=email&utm_campaign=header" target="_blank" style="text-decoration: none;">
+                                                                       <img src="http://cdn.mcauto-images-production.sendgrid.net/79fcc5d8494d7892/be9f6854-34cb-48f4-add5-f94d61b5b4f9/289x101.png" border="0" width="180" height="auto" alt="img" style="display:block;">
+                                                                   </a>
+                                                                </td>
+                                                            </tr>
+                                                           
+                                                       </tbody>
+                                                   </table>
+                                               </td>
+   
+                                               <td class="display-block padding" width="40" style="line-height:1px;"></td>
+   
+                                               <td class="display-block" width="280" align="center" valign="middle">
+                                                   <table align="center" border="0" cellpadding="0" width="100%" cellspacing="0" style="border-collapse: collapse;">
+                                                       <tbody>
+                                                            
+                                                            <tr>
+                                                               <td class="text-center" width="100%" align="right" valign="middle" style="margin:0px;padding:0px;color: #FFFFFF;font-family: 'Poppins',sans-serif;font-size:16px;line-height: 24px;font-weight: 400;">
+                                                                   <a href="https://www.lunaspin.app/articles/?utm_source=app&utm_medium=email&utm_campaign=header" target="_blank" style="color: #FFFFFF;text-decoration: none;">News & Stories</a>
+                                                               </td>
+                                                           </tr>	
+                                                           
+                                                       </tbody>
+                                                   </table>
+                                               </td>
+                                           </tr>
+                                       </tbody>
+                                   </table>
+                               </td>
+                           </tr>
+   
+   
+                           <tr>
+                               <td width="100%" height="20" style="line-height:1px;" class="display-block padding"></td>
+                           </tr>
+   
+                       </tbody>
+                   </table>
+               </td>
+           </tr>
+       </tbody>
+   </table>
+   <!-- End-Section-0 (2-col-Text) -->
+   
+   <!-- Section-0 (Fluid-Banner) -->
+   <table class="width_100" align="center" border="0" cellpadding="0" cellspacing="0" bgcolor="#ffffff" width="700" style="border-collapse:collapse;border-top-left-radius: 15px; border-top-right-radius: 15px;">
+       <tbody>
+           <tr>
+               <td width="100%" align="center" valign="top">
+                   <table class="width_100percent" align="center" border="0" cellpadding="0" width="700" cellspacing="0" style="border-collapse:collapse;">
+                       <tbody>
+                           <tr>
+                               <td class="display-block" width="700" valign="middle" align="center" style="line-height:1px;">
+                                   <img src="http://cdn.mcauto-images-production.sendgrid.net/79fcc5d8494d7892/fd1626c2-3592-4e58-8dc0-696b34a3e425/1200x200.jpg" border="0" width="700" height="auto" alt="" style="display:block;border-top-left-radius: 15px; border-top-right-radius: 15px;">
+                               </td>
+                           </tr>
+                       </tbody>
+                   </table>
+               </td>
+           </tr>
+       </tbody>
+   </table>
+   <!-- End-Section-0 (Fluid-Banner) -->
+   
+   <!-- Section-0 (Text-Content) -->
+   <table class="width_100" align="center" border="0" cellpadding="0" cellspacing="0" width="700" style="border-collapse:collapse;border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;" bgcolor="#ffffff">
+       <tbody>
+           <tr>
+               <td width="100%" align="center" valign="middle">
+                   <div style="margin:0 auto">
+                       <table class="width_90percent" align="center" border="0" cellpadding="0" width="600" cellspacing="0" style="border-collapse: collapse;">
+                           <tbody>
+                               <tr>
+                                   <td width="100%" height="40" style="line-height:1px;" class="display-block padding"></td>
+                               </tr>
+   
+                               <tr>
+                                   <td width="100%" valign="top" align="left" style="margin: 0px;padding: 0px;color:#11273b;font-size:36px; line-height: 46px; font-weight: 600; font-family:'Poppins', sans-serif; text-transform: inherit;">
+                                       Request to close your account
+                                   </td>
+                               </tr>
+                               
+                               <tr>
+                                   <td width="100%" height="10" style="line-height:1px;"></td>
+                               </tr>
+                               
+                               <tr>
+                                   <td width="100%" valign="top" align="left" style="margin: 0px;padding: 0px;color:#11273b;font-size: 16px; line-height: 26px; font-weight: 400; font-family:'Poppins', sans-serif; text-transform: inherit;">
+                                       Your account closure request has been submitted.
+                                   </td>
+                               </tr>	
+                               
+                               <tr>
+                                   <td width="100%" height="20" style="line-height:1px;" class="display-block padding"></td>
+                               </tr>
+   
+   
+                               <tr>
+                                   <td width="100%" valign="top" align="left" style="margin: 0px;padding: 0px;color:#11273b;font-size: 16px; line-height: 26px; font-weight: 400; font-family:'Poppins', sans-serif; text-transform: inherit;">
+                                       Closure requests may take up to 48 hours to process. You'll receive an confirmation email once this has been complete.
+                                   </td>
+                               </tr>
+   
+                               <tr>
+                                   <td width="100%" height="20" style="line-height:1px;" class="display-block padding"></td>
+                               </tr>
+   
+                               <tr>
+                                   <td width="100%" valign="top" align="left" style="margin: 0px;padding: 0px;color:#50606f;font-size: 13px; line-height: 26px; font-weight: 400; font-family:'Poppins', sans-serif; text-transform: inherit;">
+                                       If you didn't request an account closure, <a href="https://www.lunaspin.app/contact/?utm_source=app&utm_medium=email&utm_campaign=account_preclosure" style="color:#5B88E8; text-decoration: underline;">contact our support team</a> immediately!
+                                   </td>
+                               </tr>
+                               
+                               <tr>
+                                   <td width="100%" height="30" style="line-height:1px;" class="display-block padding"></td>
+                               </tr>
+   
+                               <tr>
+                                   <td width="100%" align="left" valign="top" style="margin:0px;padding:0px;color:#000000;font-family: 'Poppins', sans-serif; font-size:24px; line-height: 30px; font-weight:600;">
+                                       Keep going!<br>
+                                       <span style="font-size: 18px; font-weight: 500;">LunaSpin Team</span>
+                                   </td>
+                               </tr>
+   
+                               <tr>
+                                   <td width="100%" height="30" style="line-height:1px;" class="display-block padding"></td>
+                               </tr>    
+   
+                           </tbody>
+                       </table>
+                   </div>
+               </td>
+           </tr>
+       </tbody>
+   </table>
+   <!-- Section-0 (Text-Content)  End-->
+    
+   <!-- Section-0 (Text-Content) -->
+   <table class="width_100" align="center" border="0" cellpadding="0" cellspacing="0" width="700" style="border-collapse:collapse;" bgcolor="#351a57">
+       <tbody>
+           <tr>
+               <td width="100%" align="center" valign="middle">
+                   <div style="margin:0 auto">
+                       <table class="width_90percent" align="center" border="0" cellpadding="0" width="700" cellspacing="0" style="border-collapse: collapse;">
+                           <tbody>
+                               <tr>
+                                   <td width="100%" height="40" style="line-height:1px;" class="display-block padding"></td>
+                               </tr>
+   
+                               <!-- border bg -->
+                               <tr>
+                                   <td width="100%" align="center" valign="middle" style="border-bottom: 1px solid #d7cadd; line-height: 1px;">
+                                   </td>
+                               </tr>
+                               <!-- End border bg -->
+   
+                               <tr>
+                                   <td width="100%" height="10" style="line-height:1px;"></td>
+                               </tr>
+   
+                               <tr>
+                                   <td width="100%" valign="top" align="left" style="margin: 0px;padding: 0px;color:#d7cadd;font-size: 13px; line-height: 26px; font-weight: 400; font-family:'Poppins', sans-serif; text-transform: inherit;">
+                                       You have received this email because you have an account with LunaSpin.app
+                                   </td>
+                               </tr>	
+                               
+                               <tr>
+                                   <td width="100%" height="10" style="line-height:1px;"></td>
+                               </tr>
+   
+                               <!-- border bg -->
+                               <tr>
+                                   <td width="100%" align="center" valign="middle" style="border-bottom: 1px solid #d7cadd; line-height: 1px;">
+                                   </td>
+                               </tr>
+                               <!-- End border bg -->
+   
+                               <tr>
+                                   <td width="100%" height="10" style="line-height:1px;"></td>
+                               </tr>
+   
+                               <tr>
+                                   <td width="100%" align="left" valign="top" style="margin:0;padding:10px 0px 0px 0px;color:#d7cadd;font-family: 'Poppins', sans-serif; font-size:18px; line-height: 24px; font-weight:600;">
+                                       <a href="https://shop.lunaspin.app/?utm_source=app&utm_medium=email&utm_campaign=footer" target="_blank"><img src="http://cdn.mcauto-images-production.sendgrid.net/79fcc5d8494d7892/0ca954d6-0350-47d8-a945-c80e0654ef3c/50x50.png" border="0" width="25" height="25" alt="" style="display:inline;margin-bottom:-5px;"> Shop</a><span>&nbsp;&nbsp;&nbsp;&nbsp;</span><a href="https://www.lunaspin.app/contact?utm_source=app&utm_medium=email&utm_campaign=footer" target="_blank"><img src="http://cdn.mcauto-images-production.sendgrid.net/79fcc5d8494d7892/0ca954d6-0350-47d8-a945-c80e0654ef3c/50x50.png" border="0" width="25" height="25" alt="" style="display:inline;margin-bottom:-5px;"> Contact Us</a><span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                                       <a href="https://www.lunaspin.app/privacy?utm_source=app&utm_medium=email&utm_campaign=footer" target="_blank"><img src="http://cdn.mcauto-images-production.sendgrid.net/79fcc5d8494d7892/0ca954d6-0350-47d8-a945-c80e0654ef3c/50x50.png" border="0" width="25" height="25" alt="" style="display:inline;margin-bottom:-5px;"> Privacy Policy</a><span>&nbsp;&nbsp;&nbsp;&nbsp;</span><a href="https://www.lunaspin.app/terms?utm_source=app&utm_medium=email&utm_campaign=footer" target="_blank"><img src="http://cdn.mcauto-images-production.sendgrid.net/79fcc5d8494d7892/0ca954d6-0350-47d8-a945-c80e0654ef3c/50x50.png" border="0" width="25" height="25" alt="" style="display:inline;margin-bottom:-5px;"> Terms of Use</a>
+                                   </td>
+                               </tr>
+                               
+                               <tr>
+                                   <td width="100%" height="20" style="line-height:1px;" class="display-block padding"></td>
+                               </tr> 
+                               
+                               <tr>
+                                   <td class="text-center" width="100%" align="left" valign="top" style="margin:0px;padding:0px;color:#d7cadd;font-family: 'Poppins', sans-serif; font-size:24px; line-height:30px; font-weight:700;">
+                                       DISCOVER & INSPIRE AT <br>
+                                       LUNASPIN.APP
+                                   </td>
+                               </tr>
+   
+                                                           
+                               <tr>
+                                   <td width="100%" height="20" style="line-height:1px;" class="display-block padding"></td>
+                               </tr> 
+   
+                               <tr>
+                                   <td class="text-center" width="100%" align="left" valign="top" style="margin:0px;padding:0px;color:#d7cadd;font-family: 'Poppins', sans-serif; font-size:13px; line-height:25px; font-weight:400;">
+                                       ${new Date().getFullYear()} Drip Fed Ltd t/a LunaSpin App. All rights reserved
+                                   </td>
+                               </tr>
+   
+   
+                               <tr>
+                                   <td width="100%" height="40" style="line-height:1px;" class="display-block padding"></td>
+                               </tr>
+   
+                           </tbody>
+                       </table>
+                   </div>
+               </td>
+           </tr>
+       </tbody>
+   </table>
+   <!-- Section-0 (Text-Content)  End-->
+   
+   </body>
+   </html>
+     `,
   };
 };
 
@@ -6644,7 +7682,7 @@ export const emailTemplate = {
   WelcomMessageForClassBooking, // done
   WelcomeMessageForWaitingList, // done
   MessageForCancellation, // done
-  WelcomeMessageForAcceptSpeceASQue,
-  RequestToCloseClub,
-  AccountClosedNotificaiton,
+  WelcomeMessageForAcceptSpeceASQue, //done
+  RequestToCloseClub, // done
+  AccountClosedNotificaiton, // done
 };
