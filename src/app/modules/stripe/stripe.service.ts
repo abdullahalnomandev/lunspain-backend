@@ -1,13 +1,12 @@
 import Stripe from "stripe";
 import config from "../../../config";
 import { User } from "../user/user.model";
-import { IUser } from "../user/user.interface";
 import ApiError from "../../../errors/ApiError";
 import { StatusCodes } from "http-status-codes";
 import { Club } from "../club/club.model";
 
 
-const createAccountLink = async (userId: string,clubId:string) => {
+const createAccountLink = async (userId: string) => {
 
     const [user, club] = await Promise.all([
         User.findById(userId),

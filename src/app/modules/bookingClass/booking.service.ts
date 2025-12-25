@@ -252,7 +252,7 @@ const getAllBookingAttendance = async (userId: string, clubId: string, classId: 
     .filter()
     .sort();
 
-  const bookingAttendance = await result.modelQuery;
+  const bookingAttendance = await result.modelQuery.populate('user', 'profile.firstName profile.lastName profile.image profile.username');
   const pagination = await result.getPaginationInfo();
 
   // Add setField to indicate if the requesting user is in the booking list 

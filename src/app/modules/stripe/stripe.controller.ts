@@ -6,7 +6,7 @@ import { StripeService } from './stripe.service';
 
 const getAccountLink = catchAsync(async (req: Request, res: Response) => {
     const userId = req.user.id;
-    const result = await StripeService.createAccountLink(userId,req.params.clubId);
+    const result = await StripeService.createAccountLink(userId);
 
     sendResponse(res, {
         success: true,
