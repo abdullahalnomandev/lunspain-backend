@@ -389,6 +389,8 @@ const getUserProfileByIdFromDB = async (
     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
   }
 
+  const userClubs = await ClubMember.find({ user: requestUserId }).lean();
+
   const postsWithCounts = await Promise.all(
     userPosts.map(async (post: any) => {
       const [commentOfPost, likeOfPost] = await Promise.all([
@@ -426,6 +428,7 @@ const getUserProfileByIdFromDB = async (
       totalFollowing: totalFollowing,
     },
     posts: postsWithCounts,
+    clubs: userClubs,
     isFollowing,
     conversationId
   };
