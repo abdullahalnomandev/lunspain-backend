@@ -12,6 +12,11 @@ router.post(
 );
 
 router.post(
+  '/admin-login',
+  AuthController.adminLogin
+)
+
+router.post(
   '/resend-email',
   validateRequest(AuthValidation.createResendEmailZodSchema),
   AuthController.resendEmail

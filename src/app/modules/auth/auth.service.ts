@@ -21,6 +21,7 @@ import {
   getAppleUserInfoWithToken,
   getUserInfoWithToken,
 } from '../user/user.util';
+import { USER_ROLES } from '../../../enums/user';
 
 //login
 const loginUserFromDB = async (payload: ILoginData) => {
@@ -91,6 +92,81 @@ const loginUserFromDB = async (payload: ILoginData) => {
 
   return { data: { data: userObj, accessToken: createToken } };
 };
+const adminLoginFromDB = async (payload: ILoginData) => {
+  const { email, password, google_id_token, apple_id_token } = payload;
+
+  let userInfo = null;
+
+  //GOOGLE LOGIN
+  if (payload.auth_provider === USER_AUTH_PROVIDER.GOOGLE && google_id_token) {
+    const tokenData = await getUserInfoWithToken(google_id_token);
+    const userEmail = tokenData?.data?.email;
+    userInfo = await User.findOne({ email: userEmail }).select('+password');
+  }
+  //APPLE LOGIN
+  else if (
+    payload.auth_provider === USER_AUTH_PROVIDER.APPLE &&
+    apple_id_token
+  ) {
+    const tokenData = await getAppleUserInfoWithToken(apple_id_token);
+    const userEmail = tokenData.data.email;
+    userInfo = await User.findOne({ email: userEmail }).select('+password');
+  }
+  // LOCAL LOGIN
+  else {
+    if (payload.auth_provider === USER_AUTH_PROVIDER.LOCAL && password) {
+      userInfo = await User.findOne({ email }).select('+password');
+
+      if (
+        userInfo &&
+        !(await User.isMatchPassword(password, userInfo.password))
+      ) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, 'Password is incorrect!');
+      }
+    }
+  }
+
+  if (!userInfo) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
+  }
+
+  //check verified and status
+  if (!userInfo.verified) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      'Please verify your account, then try to login again'
+    );
+  }
+
+  //check user status
+  if (userInfo.status === 'delete') {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      'You don’t have permission to access this content.It looks like your account has been deleted.'
+    );
+  }
+
+  if (userInfo && userInfo.role !== USER_ROLES.ADMIN && userInfo.role !== USER_ROLES.SUPER_ADMIN) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      "You don’t have permission to access this content."
+    );
+  }
+
+  //create token
+  const createToken = jwtHelper.createToken(
+    { id: userInfo._id, role: userInfo.role, email: userInfo.email },
+    config.jwt.jwt_secret as Secret,
+    config.jwt.jwt_expire_in as string
+  );
+
+  // Remove password from response
+  const userObj = userInfo.toObject ? userInfo.toObject() : { ...userInfo };
+  if ('password' in userObj) delete (userObj as any)?.password;
+  if ('token' in userObj) delete (userObj as any)?.token;
+
+  return { data: { data: userObj, accessToken: createToken } };
+};
 
 //forget password
 const forgetPasswordToDB = async (email: string) => {
@@ -143,7 +219,7 @@ const verifyEmailToDB = async (verify_token: string) => {
   if ('password' in userObj) delete (userObj as any)?.password;
   if ('token' in userObj) delete (userObj as any)?.token;
 
-  return { 
+  return {
     data: { data: userObj, accessToken: createToken },
     message: 'Account successfully verified.'
   };
@@ -256,4 +332,5 @@ export const AuthService = {
   forgetPasswordToDB,
   resetPasswordToDB,
   changePasswordToDB,
+  adminLoginFromDB
 };

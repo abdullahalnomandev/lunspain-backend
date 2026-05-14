@@ -115,7 +115,7 @@ const getUserProfileFromDB = async (user: JwtPayload): Promise<any> => {
   const { id } = user;
 
   // Only unselect the arrays but still need to count their lengths, so will fetch their counts
-  const isExistUser = await User.findById(id, '-verified -role -token').lean();
+  const isExistUser = await User.findById(id, '-verified -token').lean();
   const userPosts = await Post.find({ creator: id }, '-creator -likes').lean();
   const totalFollower = await Follower.countDocuments({ following: id }).lean();
   const totalFollowing = await Follower.countDocuments({ follower: id }).lean();

@@ -273,7 +273,7 @@ const getALlTypeOfpost = async (
       searchableField = clubSearchableField;
       break;
     case POST_SERCH_TYPE.USER:
-      buildQuery = User.find({ _id: { $ne: userId } }).populate('profile.image profile.username email bio');
+      buildQuery = User.find({ _id: { $ne: userId } }).populate('profile.image profile.username email');
       searchableField = userSearchableField;
       break;
     case POST_SERCH_TYPE.VIDEO:
