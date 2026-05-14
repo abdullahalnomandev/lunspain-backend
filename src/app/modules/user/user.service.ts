@@ -137,6 +137,7 @@ const getUserProfileFromDB = async (user: JwtPayload): Promise<any> => {
       };
     })
   );
+  const userClubs = await ClubMember.find({ user: id }).populate('club').lean();
 
   // Prepare response without full followers/following arrays, only counts
   const userProfile = {
@@ -147,6 +148,7 @@ const getUserProfileFromDB = async (user: JwtPayload): Promise<any> => {
       totalFollowing: totalFollowing,
     },
     posts: postsWithCounts,
+    clubs: userClubs,
   };
 
   // Remove the actual lists from the response
@@ -389,7 +391,7 @@ const getUserProfileByIdFromDB = async (
     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
   }
 
-  const userClubs = await ClubMember.find({ user: requestUserId }).lean();
+  const userClubs = await ClubMember.find({ user: requestUserId }).populate('club').lean();
 
   const postsWithCounts = await Promise.all(
     userPosts.map(async (post: any) => {
