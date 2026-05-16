@@ -116,6 +116,7 @@ export const bookClass = async (payload: IBookingClass, origin: string, coupon_c
         return { redirectStripeUrl: stripeSession.url || "" };
 
     } catch (error: any) {
+        console.log('BOOK CLASS ERROR:', error);
         console.error('BOOK CLASS ERROR:', error?.message || error);
 
         throw new ApiError(
