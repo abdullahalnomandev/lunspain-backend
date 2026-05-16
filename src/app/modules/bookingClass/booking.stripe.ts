@@ -43,6 +43,9 @@ export const bookClass = async (payload: IBookingClass, origin: string, coupon_c
         if (!userInfo) {
             throw new ApiError(StatusCodes.NOT_FOUND, 'User not found');
         }
+        if (!userInfo?.connected_account_id?.startsWith("acct_")) {
+            throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid Stripe connected account');
+        }
         // Step 1: Create booking record (no transaction)
         payload.payment_status = PAYMENT_STATUS.PENDING;
         const create_booking = await BookingClass.create(payload);
