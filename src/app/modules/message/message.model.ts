@@ -23,7 +23,10 @@ const messageSchema = new Schema<IMessage, IMessageModel>(
         },
         image: {
             type: [String],
-        }
+        },
+        media: {
+            type: [String],
+        },
     },
     { timestamps: true }
 );

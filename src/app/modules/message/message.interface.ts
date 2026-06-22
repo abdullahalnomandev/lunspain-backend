@@ -6,6 +6,7 @@ export type IMessage = {
     conversation: mongoose.Types.ObjectId;
     text?: string;
     image?: string[];
+    media?: string[];
 }
 
 export type IMessageModel = Model<IMessage, Record<string, unknown>>

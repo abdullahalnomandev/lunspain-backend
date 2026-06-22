@@ -10,9 +10,11 @@ const sendMessage = catchAsync(
     const sender = (req.user as any)?.id;
 
     let image = getMultipleFilesPath(req.files, 'image');
+    const media = getMultipleFilesPath(req.files, 'media');
     const data = {
       sender,
       image,
+      media,
       ...req.body,
     };
 
