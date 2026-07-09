@@ -149,6 +149,13 @@ const getAllMyDrafts = async (userId: string,query:any) => {
     //@ts-ignore
     newQuery.club = query.club;
   }
+  if(query.club){
+    //@ts-ignore
+    newQuery.creator_type = CREATOR_TYPE.CLUB;
+  }else{
+    //@ts-ignore
+    newQuery.creator_type = CREATOR_TYPE.USER;
+  }
   const drafts = await Post.find({
     ...newQuery,
   }).lean();
