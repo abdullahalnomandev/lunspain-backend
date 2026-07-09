@@ -23,7 +23,7 @@ const tagSchema = new Schema<ITag, ITagModel>(
   { timestamps: true }
 );
 
-tagSchema.index({ name: 1 });
+// tagSchema.index({ name: 1 });
 
 export const Tag = model<ITag, ITagModel>('Tag', tagSchema);
 

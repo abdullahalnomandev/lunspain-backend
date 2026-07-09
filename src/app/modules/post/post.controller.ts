@@ -86,7 +86,7 @@ const deletePost = catchAsync(async (req: Request, res: Response) => {
 
 const getAllMyDrafts = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user?.id;
-  const drafts = await PostService.getAllMyDrafts(userId);
+  const drafts = await PostService.getAllMyDrafts(userId,req.query);
 
   sendResponse(res, {
     success: true,

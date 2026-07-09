@@ -139,10 +139,18 @@ const updatePost = async (id: string, payload: Partial<IPOST>) => {
   return updatedPost;
 };
 
-const getAllMyDrafts = async (userId: string) => {
-  const drafts = await Post.find({
+const getAllMyDrafts = async (userId: string,query:any) => {
+
+  let newQuery = {
     creator: userId,
     post_type: POST_TYPE.DRAFTS,
+  }
+  if(query.club){
+    //@ts-ignore
+    newQuery.club = query.club;
+  }
+  const drafts = await Post.find({
+    ...newQuery,
   }).lean();
 
   if (!drafts) {
@@ -214,7 +222,7 @@ const findById = async (postId: string) => {
 };
 const getAllPosts = async (query: Record<string, any>, userId: string) => {
   // Build the query with pagination, filtering, sorting, and field selection
-  const userQuery = new QueryBuilder(Post.find(), query)
+  const userQuery = new QueryBuilder(Post.find({post_type: { $ne: POST_TYPE.DRAFTS }}), query)
     .paginate()
     .fields()
     .filter()

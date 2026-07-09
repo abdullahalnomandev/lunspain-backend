@@ -27,7 +27,7 @@ const couponSchema = new Schema<ICoupon, ICouponModel>(
   { timestamps: true }
 );
 
-couponSchema.index({ code: 1 });
+// couponSchema.index({ code: 1 });
 
 export const Coupon = model<ICoupon, ICouponModel>('Coupon', couponSchema);
 
