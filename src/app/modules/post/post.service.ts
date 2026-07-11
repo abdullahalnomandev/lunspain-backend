@@ -158,6 +158,10 @@ const getAllMyDrafts = async (userId: string,query:any) => {
   }
   const drafts = await Post.find({
     ...newQuery,
+    // all between 30 minutes
+    createdAt: {
+      $gte: new Date(Date.now() - 30 * 60 * 1000),
+    },
   }).lean();
 
   if (!drafts) {
