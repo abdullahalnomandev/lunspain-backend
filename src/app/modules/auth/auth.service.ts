@@ -285,6 +285,7 @@ const changePasswordToDB = async (
       'Please give different password from current password'
     );
   }
+  console.log(newPassword, confirmPassword)
   //new password and confirm password check
   if (newPassword !== confirmPassword) {
     throw new ApiError(

@@ -252,7 +252,19 @@ const getAccountCloseStatus = catchAsync(async (req: Request, res: Response) => 
   });
 });
 
+const updateUserStatus = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.params.id;
+  const { status } = req.body;
 
+  const result = await UserService.updateUserStatus(userId, status);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'User status updated successfully',
+    data: result,
+  });
+});
 
 export const UserController = {
   createUser,
@@ -268,5 +280,6 @@ export const UserController = {
   getAllNotificationSettings,
   updateNotificationSettings,
   createCloseAccountRequest,
-  getAccountCloseStatus
+  getAccountCloseStatus,
+  updateUserStatus,
 };

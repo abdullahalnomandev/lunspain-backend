@@ -13,6 +13,7 @@ import { MessageRoutes } from '../app/modules/message/message.route';
 import { NotificationRoutes } from '../app/modules/notification/notification.route';
 import { TagRoutes } from '../app/modules/tag/tag.route';
 import { CouponRoutes } from '../app/modules/coupon/coupon.route';
+import { SettingsRoutes } from '../app/modules/settings/settings.route';
 const router = express.Router();
 
 const apiRoutes = [
@@ -71,7 +72,11 @@ const apiRoutes = [
   {
     path: '/coupon',
     route: CouponRoutes
-  }
+  },
+  {
+    path: '/settings',
+    route: SettingsRoutes
+  },
 ];
 
 apiRoutes.forEach(route => router.use(route.path, route.route));

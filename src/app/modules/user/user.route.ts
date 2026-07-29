@@ -9,88 +9,102 @@ const router = express.Router();
 
 router
   .route('/profile')
-  .get(auth(USER_ROLES.ADMIN, USER_ROLES.USER , USER_ROLES.SUPER_ADMIN), UserController.getUserProfile)
+  .get(
+    auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+    UserController.getUserProfile,
+  )
   .patch(
     auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
     fileUploadHandler(),
     validateRequest(UserValidation.updateUserZodSchema),
-    UserController.updateProfile
+    UserController.updateProfile,
   );
 
 router
   .route('/profile/skip')
   .post(
     auth(USER_ROLES.ADMIN, USER_ROLES.USER),
-    UserController.updateSkypeProfile
+    UserController.updateSkypeProfile,
   );
 
 router
   .route('/')
-  .get(auth(USER_ROLES.ADMIN, USER_ROLES.USER), UserController.getAllUsers)
+  .get(
+    auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+    UserController.getAllUsers,
+  )
   .post(
     validateRequest(UserValidation.createUserZodSchema),
-    UserController.createUser
+    UserController.createUser,
   );
 
 router
   .route('/profile/user/:id')
   .get(
     auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
-    UserController.getUserProfileById
+    UserController.getUserProfileById,
   );
 
 router
   .route('/toggle/follow/:id')
   .post(
     auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
-    UserController.toggleFollowUser
+    UserController.toggleFollowUser,
   );
 
 router
   .route('/unfollow/:id')
   .post(
     auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
-    UserController.unfollowUser
+    UserController.unfollowUser,
   );
 
 router
   .route('/profile/follower-list/:id')
   .get(
     auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
-    UserController.getFollowerList
+    UserController.getFollowerList,
   );
 
 router
   .route('/profile/following-list/:id')
   .get(
     auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
-    UserController.getFollowingList
+    UserController.getFollowingList,
   );
 
 router
   .route('/notification-settings')
   .get(
     auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
-    UserController.getAllNotificationSettings
+    UserController.getAllNotificationSettings,
   );
 
 router.post(
   '/close-account-request',
   auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
-  UserController.createCloseAccountRequest
+  UserController.createCloseAccountRequest,
 );
 
 router.get(
   '/leave-account/status',
   auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
-  UserController.getAccountCloseStatus
+  UserController.getAccountCloseStatus,
 );
 
 router
   .route('/notification-settings')
   .patch(
     auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
-    UserController.updateNotificationSettings
+    UserController.updateNotificationSettings,
   );
+
+router
+  .route('/:id')
+  .patch(
+    auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+    UserController.updateUserStatus,
+  );
+
 
 export const UserRoutes = router;

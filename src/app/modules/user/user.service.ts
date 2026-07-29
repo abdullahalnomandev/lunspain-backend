@@ -634,6 +634,11 @@ const getAccountCloseStatus = async (userId: string) => {
   };
 };
 
+const updateUserStatus = async (userId: string, status: string) => {
+  const user = await User.findByIdAndUpdate(userId, { status }, { new: true });
+  return user;
+};
+
 export const UserService = {
   createUserToDB,
   getUserProfileFromDB,
@@ -650,4 +655,5 @@ export const UserService = {
   updateNotificationSettingsFromDB,
   createCloseAccountRequest,
   getAccountCloseStatus,
+  updateUserStatus,
 };
