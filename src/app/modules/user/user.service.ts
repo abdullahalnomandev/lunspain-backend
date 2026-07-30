@@ -26,9 +26,14 @@ import { CloseAccountRequest } from './privacy/close_account_request.model';
 import { CLOSING_STATUS } from './privacy/close_account_request.interface';
 import { CLUB_ROLE } from '../club/club.constant';
 import { Conversation } from '../conversation/conversaiton.model';
+import { Club } from '../club/club.model';
+import { Class } from '../class/class.model';
+import { BookingClass } from '../bookingClass/bookingClass.model';
+import { PAYMENT_STATUS } from '../bookingClass/booking.constant';
+import { CLASS_STATUS } from '../class/class.constant';
 
 const createUserToDB = async (
-  payload: Partial<IUser>
+  payload: Partial<IUser>,
 ): Promise<IUser | { accessToken: string }> => {
   if (
     !payload.password &&
@@ -37,7 +42,7 @@ const createUserToDB = async (
   ) {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
-      'Passwored or Google or Apple id is required'
+      'Passwored or Google or Apple id is required',
     );
   }
 
@@ -67,7 +72,7 @@ const createUserToDB = async (
       const createToken = jwtHelper.createToken(
         { id: isExist._id, role: isExist.role, email: isExist.email },
         config.jwt.jwt_secret as Secret,
-        config.jwt.jwt_expire_in as string
+        config.jwt.jwt_expire_in as string,
       );
       return { accessToken: createToken };
     }
@@ -105,7 +110,7 @@ const createUserToDB = async (
     const createToken = jwtHelper.createToken(
       { id: createUser._id, role: createUser.role, email: createUser.email },
       config.jwt.jwt_secret as Secret,
-      config.jwt.jwt_expire_in as string
+      config.jwt.jwt_expire_in as string,
     );
     return { accessToken: createToken };
   }
@@ -135,7 +140,7 @@ const getUserProfileFromDB = async (user: JwtPayload): Promise<any> => {
         commentOfPost,
         likeOfPost,
       };
-    })
+    }),
   );
   const userClubs = await ClubMember.find({ user: id }).populate('club').lean();
 
@@ -162,7 +167,7 @@ const getUserProfileFromDB = async (user: JwtPayload): Promise<any> => {
 
 const updateProfileToDB = async (
   user: JwtPayload,
-  payload: Partial<IUserProfile>
+  payload: Partial<IUserProfile>,
 ): Promise<Partial<IUser | null> | undefined> => {
   const { id } = user;
 
@@ -199,7 +204,7 @@ const updateProfileToDB = async (
     { $set: { profile: { ...isExistUser.profile, ...payload } } },
     {
       new: true,
-    }
+    },
   );
 
   // Welcome Email
@@ -213,7 +218,7 @@ const updateProfileToDB = async (
     !level_of_experience
   ) {
     const welcomeEmailTemplate = emailTemplate.updateCompletedWelcomeEmail(
-      updatedUser?.email as string
+      updatedUser?.email as string,
     );
     emailHelper.sendEmail(welcomeEmailTemplate);
   }
@@ -222,7 +227,7 @@ const updateProfileToDB = async (
 };
 
 const updateSkypeProfileToDB = async (
-  user: JwtPayload
+  user: JwtPayload,
 ): Promise<Partial<IUser | null>> => {
   const { id } = user;
   const isExistUser = (await User.isExistUserById(id)) as IUser;
@@ -236,7 +241,7 @@ const updateSkypeProfileToDB = async (
     ) {
       const welcomeEmailTemplate = emailTemplate.completeAccount(
         isExistUser?.email as string,
-        `${config.front_end_app_url}?userId=${isExistUser?._id}`
+        `${config.front_end_app_url}?userId=${isExistUser?._id}`,
       );
       emailHelper.sendEmail(welcomeEmailTemplate);
     }
@@ -285,7 +290,7 @@ const getAllUsers = async (query: Record<string, any>) => {
 export const toggleFollowUser = async (
   userId: string,
   targetId: string,
-  fcmToken: string
+  fcmToken: string,
 ) => {
   if (userId === targetId) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'You cannot follow yourself');
@@ -314,7 +319,7 @@ export const toggleFollowUser = async (
     //  SEND NOTIFICATION
     const userNotificationSettings = await User.findById(
       targetId,
-      '-_id notification_settings'
+      '-_id notification_settings',
     )
       .populate('notification_settings')
       .lean()
@@ -369,16 +374,16 @@ export const getUserStats = async (userId: string, targetId: string) => {
 
 const getUserProfileByIdFromDB = async (
   userId: string,
-  requestUserId: string
+  requestUserId: string,
 ): Promise<IUser & { isFollowing: boolean }> => {
   // Only unselect the arrays but still need to count their lengths, so will fetch their counts
   const isExistUser = await User.findById(
     requestUserId,
-    '-verified -role -token'
+    '-verified -role -token',
   ).lean();
   const userPosts = await Post.find(
     { creator: requestUserId },
-    '-creator -likes'
+    '-creator -likes',
   ).lean();
   const totalFollower = await Follower.countDocuments({
     following: requestUserId,
@@ -391,7 +396,9 @@ const getUserProfileByIdFromDB = async (
     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
   }
 
-  const userClubs = await ClubMember.find({ user: requestUserId }).populate('club').lean();
+  const userClubs = await ClubMember.find({ user: requestUserId })
+    .populate('club')
+    .lean();
 
   const postsWithCounts = await Promise.all(
     userPosts.map(async (post: any) => {
@@ -404,7 +411,7 @@ const getUserProfileByIdFromDB = async (
         commentOfPost,
         likeOfPost,
       };
-    })
+    }),
   );
 
   // Determine if a conversation exists between userId and requestUserId
@@ -414,7 +421,7 @@ const getUserProfileByIdFromDB = async (
       { creator: requestUserId, participant: userId },
     ],
   }).lean();
-  
+
   // Check if requestUserId follows userId
   const isFollowing = !!(await Follower.findOne({
     follower: userId,
@@ -432,7 +439,7 @@ const getUserProfileByIdFromDB = async (
     posts: postsWithCounts,
     clubs: userClubs,
     isFollowing,
-    conversationId
+    conversationId,
   };
 
   // Remove the actual lists from the response
@@ -447,15 +454,15 @@ const getUserProfileByIdFromDB = async (
 const getFollowingListFromDB = async (
   requestUserId: string,
   myUserId: string,
-  query: Record<string, any>
+  query: Record<string, any>,
 ) => {
   // Build query for users that requestUserId is following
   const followingQuery = new QueryBuilder(
     Follower.find({ follower: requestUserId }).populate(
       'following',
-      'profile.firstName profile.username profile.lastName profile.image'
+      'profile.firstName profile.username profile.lastName profile.image',
     ),
-    query
+    query,
   )
     .paginate()
     .fields()
@@ -477,7 +484,7 @@ const getFollowingListFromDB = async (
         ...doc.toObject(),
         isFollowing: amIFollowing,
       };
-    })
+    }),
   );
 
   return {
@@ -489,16 +496,16 @@ const getFollowingListFromDB = async (
 const getFollowerListFromDB = async (
   requestUserId: string,
   myUserId: string,
-  query: Record<string, any>
+  query: Record<string, any>,
 ) => {
   // Build query for users that requestUserId is following
   const followingQuery = new QueryBuilder(
     Follower.find({ following: requestUserId }).populate(
       'follower',
 
-      'profile.firstName profile.username profile.lastName profile.image'
+      'profile.firstName profile.username profile.lastName profile.image',
     ),
-    query
+    query,
   )
     .paginate()
     .fields()
@@ -520,7 +527,7 @@ const getFollowerListFromDB = async (
         ...doc.toObject(),
         isFollowing: amIFollowing,
       };
-    })
+    }),
   );
 
   return {
@@ -532,7 +539,7 @@ const getFollowerListFromDB = async (
 const getAllNotificationSettingsFromDB = async (user: string) => {
   const notificationSettings = await User.findById(
     user,
-    '-_id notification_settings'
+    '-_id notification_settings',
   )
     .populate('notification_settings')
     .lean();
@@ -542,7 +549,7 @@ const getAllNotificationSettingsFromDB = async (user: string) => {
 
 const updateNotificationSettingsFromDB = async (
   user: string,
-  notificationSettings: IUserNotificationSettings
+  notificationSettings: IUserNotificationSettings,
 ) => {
   const userExist = await User.findById(user, 'notification_settings').lean();
   if (!userExist) {
@@ -552,14 +559,14 @@ const updateNotificationSettingsFromDB = async (
   return await UserNotificationSettings.findOneAndUpdate(
     { _id: userExist.notification_settings },
     { $set: notificationSettings },
-    { new: true }
+    { new: true },
   );
 };
 
 const createCloseAccountRequest = async (
   userId: string,
   marketing_permission: boolean,
-  feedback: string
+  feedback: string,
 ) => {
   // Check if user exists
   const user = await User.findById(userId);
@@ -607,11 +614,11 @@ const createCloseAccountRequest = async (
 
       await CloseAccountRequest.updateOne(
         { _id: existRequest._id },
-        { closing_status: CLOSING_STATUS.CLOSED }
+        { closing_status: CLOSING_STATUS.CLOSED },
       );
 
       const closeEmail = emailTemplate.AccountClosedNotificaiton(
-        user?.email || ''
+        user?.email || '',
       );
       emailHelper.sendEmail(closeEmail);
     }
@@ -639,6 +646,123 @@ const updateUserStatus = async (userId: string, status: string) => {
   return user;
 };
 
+const getDashboardOverview = async (userId: string, year: number) => {
+  const user = await User.findById(userId).lean();
+  if (!user) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
+  }
+  const totalUsers = await User.countDocuments();
+  const totalClubs = await Club.countDocuments();
+  const totalRevenueResult = await BookingClass.aggregate([
+    {
+      $match: {
+        payment_status: {
+          $in: [PAYMENT_STATUS.PAID, PAYMENT_STATUS.PAY_IN_PERSON],
+        },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        totalRevenue: { $sum: '$price_of_class' },
+      },
+    },
+  ]);
+  const totalRevenue =
+    totalRevenueResult.length > 0 ? totalRevenueResult[0].totalRevenue : 0;
+
+  const totalActiveClasses = await Class.countDocuments({
+    class_status: CLASS_STATUS.AVAILABLE,
+  });
+
+  // Use a single declaration for monthNames to avoid redeclaration
+  const monthNames = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+  ];
+
+  const targetYear = year || new Date().getFullYear();
+
+  // Aggregate earnings for all months in the target year
+  const revenuePerMonthAgg = await BookingClass.aggregate([
+    {
+      $match: {
+        payment_status: {
+          $in: [PAYMENT_STATUS.PAID, PAYMENT_STATUS.PAY_IN_PERSON],
+        },
+        createdAt: {
+          $gte: new Date(`${targetYear}-01-01T00:00:00.000Z`),
+          $lte: new Date(`${targetYear}-12-31T23:59:59.999Z`),
+        },
+      },
+    },
+    {
+      $group: {
+        _id: { month: { $month: "$createdAt" } },
+        earning: { $sum: "$price_of_class" },
+      },
+    },
+    { $sort: { "_id.month": 1 } }
+  ]);
+
+  // Build a map for quick lookup
+  const earningsMap: Record<number, number> = {};
+  for (const item of revenuePerMonthAgg) {
+    earningsMap[item._id.month] = item.earning;
+  }
+
+  // Build result for all months, earning = 0 if not present
+  const revenuePerMonthResult = monthNames.map((month, idx) => ({
+    month,
+    earning: earningsMap[idx + 1] ?? 0
+  }));
+
+  // ACTIVE USERS
+  // Generate month-wise user registrations for previous and current year
+
+  const currentYear = year || new Date().getFullYear();
+  const previousYear = currentYear - 1;
+
+  // Aggregate users for both years grouped per month
+  const userRegistrationsAgg = await User.aggregate([
+    {
+      $match: {
+        createdAt: {
+          $gte: new Date(`${previousYear}-01-01T00:00:00.000Z`),
+          $lte: new Date(`${currentYear}-12-31T23:59:59.999Z`),
+        }
+      }
+    },
+    {
+      $group: {
+        _id: { year: { $year: "$createdAt" }, month: { $month: "$createdAt" } },
+        count: { $sum: 1 }
+      }
+    }
+  ]);
+
+  // Build lookup maps for year-month -> count
+  const userMap: Record<string, number> = {};
+  for (const doc of userRegistrationsAgg) {
+    userMap[`${doc._id.year}-${doc._id.month}`] = doc.count;
+  }
+  
+  // Prepare the result as requested
+  const userRegistrationsPerMonth = monthNames.map((month, idx) => ({
+    month,
+    [previousYear]: userMap[`${previousYear}-${idx + 1}`] ?? 0,
+    [currentYear]: userMap[`${currentYear}-${idx + 1}`] ?? 0,
+  }));
+  return {
+    totalUsers,
+    totalClubs,
+    totalRevenue,
+    totalActiveClasses,
+    revenuePerMonthResult,
+    userRegistrationsPerMonth,
+  };
+};
+
 export const UserService = {
   createUserToDB,
   getUserProfileFromDB,
@@ -656,4 +780,5 @@ export const UserService = {
   createCloseAccountRequest,
   getAccountCloseStatus,
   updateUserStatus,
+  getDashboardOverview,
 };

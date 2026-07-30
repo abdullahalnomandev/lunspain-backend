@@ -106,5 +106,11 @@ router
     UserController.updateUserStatus,
   );
 
+router
+  .route('/overview')
+  .get(
+    auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+    UserController.getDashboardOverview,
+  );
 
 export const UserRoutes = router;

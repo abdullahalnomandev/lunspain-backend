@@ -11,30 +11,34 @@ router
   .post(
     auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
     fileUploadHandler(),
-    ClubController.createClub
+    ClubController.createClub,
   )
   .get(
     auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
-    ClubController.getAllClubs
+    ClubController.getAllClubs,
   );
 
 router
   .route('/all-clubs')
   .get(
     auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
-    ClubController.getClubs
+    ClubController.getClubs,
   );
-
+router.get(
+  '/top-clubs',
+  auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  ClubController.getTopClubs,
+);
 router
   .route('/:id')
   .get(
     auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
-    ClubController.getSingleClub
+    ClubController.getSingleClub,
   )
   .patch(
     fileUploadHandler(),
     auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
-    ClubController.updateClub
+    ClubController.updateClub,
   )
 
   .delete(auth(USER_ROLES.ADMIN), ClubController.deleteClub);
@@ -45,13 +49,16 @@ router
 
 router
   .route('/members/:clubId')
-  .get(auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER), ClubController.getClubMembersByClubId);
+  .get(
+    auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
+    ClubController.getClubMembersByClubId,
+  );
 
 router
   .route('/:clubId/join')
   .post(
     auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
-    ClubController.joinClub
+    ClubController.joinClub,
   );
 
 router
@@ -62,38 +69,36 @@ router.route('/creator/:creatorId').get(ClubController.getClubsByCreator);
 router.post(
   '/leave-club/:clubId',
   auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
-  ClubController.leaveClub
+  ClubController.leaveClub,
 );
 
 router.get(
   '/is-last-member/:clubId',
   auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
-  ClubController.isLastMember
+  ClubController.isLastMember,
 );
 
 router.post(
   '/close-club-request/:clubId',
   auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
-  ClubController.createCloseClubRequest
+  ClubController.createCloseClubRequest,
 );
 
 router.get(
   '/leave-club/status/:clubId',
   auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
-  ClubController.getClubCloseStatus
+  ClubController.getClubCloseStatus,
 );
 
 router
   .route('/club_notification-settings/:clubId')
   .get(
     auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
-    ClubController.getAllClubNotificationSettings
+    ClubController.getAllClubNotificationSettings,
   )
   .patch(
     auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
-    ClubController.updateClubNotificationSettings // Make sure this controller method exists and is implemented
+    ClubController.updateClubNotificationSettings, // Make sure this controller method exists and is implemented
   );
-
-
 
 export const ClubRoutes = router;

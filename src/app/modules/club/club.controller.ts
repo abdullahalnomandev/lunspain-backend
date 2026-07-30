@@ -295,6 +295,17 @@ const updateClubNotificationSettings = catchAsync(
 );
 
 
+const getTopClubs = catchAsync(async (req: Request, res: Response) => {
+  const userId = req?.user?.id;
+  const result = await ClubService.getTopClubs(userId);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Top clubs retrieved successfully',
+    data: result,
+  });
+});
 export const ClubController = {
   createClub,
   getAllClubs,
@@ -312,5 +323,6 @@ export const ClubController = {
   getClubCloseStatus,
   getClubMembersByClubId,
   getAllClubNotificationSettings,
-  updateClubNotificationSettings
+  updateClubNotificationSettings,
+  getTopClubs,
 };

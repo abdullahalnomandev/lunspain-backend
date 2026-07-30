@@ -536,6 +536,24 @@ const updateClubNotificationSettings = async ( userId: string, clubId: string, u
 };
 
 
+const getTopClubs = async (userId: string) => {
+  // Only include clubs where enable_public_club is true, as per @file_context_0
+  const clubs = await Club.find({ enable_public_club: true })
+    .sort({ stablished_date: -1 })
+    .limit(10)
+    .lean();
+
+  return {
+    pagination: {
+      total: clubs.length,
+      limit: 10,
+      page: 1,
+      totalPages: 1,
+    },
+    data: clubs,
+  };
+};
+
 export const ClubService = {
   createClub,
   getAllClubs,
@@ -553,5 +571,6 @@ export const ClubService = {
   getClubCloseStatus,
   getClubMembersByClubId,
   getClubNotificationSettings,
-  updateClubNotificationSettings
+  updateClubNotificationSettings,
+  getTopClubs,
 };

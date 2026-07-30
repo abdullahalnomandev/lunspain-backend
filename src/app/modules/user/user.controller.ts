@@ -266,6 +266,19 @@ const updateUserStatus = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getDashboardOverview = catchAsync(async (req: Request, res: Response) => {
+  const userId = req?.user?.id;
+  const year = req.query.year as unknown as number;
+  const result = await UserService.getDashboardOverview(userId, year);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Dashboard overview retrieved successfully',
+    data: result,
+  });
+});
+
 export const UserController = {
   createUser,
   getUserProfile,
@@ -282,4 +295,5 @@ export const UserController = {
   createCloseAccountRequest,
   getAccountCloseStatus,
   updateUserStatus,
+  getDashboardOverview
 };

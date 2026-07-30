@@ -103,6 +103,19 @@ const getBookingAttendance = catchAsync(
 );
 
 
+const getAllBookingClasses = catchAsync(
+    async (req: Request, res: Response, next: NextFunction) => {
+        const result = await BookingClassService.getAllBookingClasses(req.query);
+        sendResponse(res, {
+            success: true,
+            statusCode: StatusCodes.OK,
+            message: 'Booking classes retrieved successfully',
+            pagination: result.pagination,
+            data: result.result,
+        });
+    }
+);
+
 
 export const ClassController = {
     createBookingClass,
@@ -112,4 +125,5 @@ export const ClassController = {
     getAllBookingAttendance,
     cancelAttendence,
     getBookingAttendance,
+    getAllBookingClasses,
 };

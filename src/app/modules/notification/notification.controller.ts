@@ -3,10 +3,14 @@ import { StatusCodes } from 'http-status-codes';
 import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
 import { NotificationService } from './notification.service';
+import { Notification } from './notification.mode';
 
 const getMyNotifications = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user?.id;
-  const result = await NotificationService.getMyNotifications(userId, req.query);
+  const result = await NotificationService.getMyNotifications(
+    userId,
+    req.query,
+  );
 
   sendResponse(res, {
     success: true,
@@ -18,7 +22,10 @@ const getMyNotifications = catchAsync(async (req: Request, res: Response) => {
 });
 
 const club_notification = catchAsync(async (req: Request, res: Response) => {
-  const result = await NotificationService.getClubNOtifications(req.params?.clubId, req.query);
+  const result = await NotificationService.getClubNOtifications(
+    req.params?.clubId,
+    req.query,
+  );
 
   sendResponse(res, {
     success: true,
@@ -42,8 +49,24 @@ const markAsSeen = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const readAllNotifications = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  const result = await Notification.updateMany(
+    { receiver: userId },
+    { seen: true },
+  );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'All notifications marked as read',
+    data: result,
+  });
+});
+
 export const NotificationController = {
   getMyNotifications,
   markAsSeen,
-  club_notification
+  club_notification,
+  readAllNotifications,
 };

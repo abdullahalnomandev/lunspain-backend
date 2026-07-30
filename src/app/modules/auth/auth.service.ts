@@ -22,6 +22,7 @@ import {
   getUserInfoWithToken,
 } from '../user/user.util';
 import { USER_ROLES } from '../../../enums/user';
+import { Notification } from '../notification/notification.mode';
 
 //login
 const loginUserFromDB = async (payload: ILoginData) => {
@@ -66,7 +67,7 @@ const loginUserFromDB = async (payload: ILoginData) => {
   if (!userInfo.verified) {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
-      'Please verify your account, then try to login again'
+      'Please verify your account, then try to login again',
     );
   }
 
@@ -74,7 +75,7 @@ const loginUserFromDB = async (payload: ILoginData) => {
   if (userInfo.status === 'delete') {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
-      'You don’t have permission to access this content.It looks like your account has been deleted.'
+      'You don’t have permission to access this content.It looks like your account has been deleted.',
     );
   }
 
@@ -82,7 +83,7 @@ const loginUserFromDB = async (payload: ILoginData) => {
   const createToken = jwtHelper.createToken(
     { id: userInfo._id, role: userInfo.role, email: userInfo.email },
     config.jwt.jwt_secret as Secret,
-    config.jwt.jwt_expire_in as string
+    config.jwt.jwt_expire_in as string,
   );
 
   // Remove password from response
@@ -134,7 +135,7 @@ const adminLoginFromDB = async (payload: ILoginData) => {
   if (!userInfo.verified) {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
-      'Please verify your account, then try to login again'
+      'Please verify your account, then try to login again',
     );
   }
 
@@ -142,14 +143,18 @@ const adminLoginFromDB = async (payload: ILoginData) => {
   if (userInfo.status === 'delete') {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
-      'You don’t have permission to access this content.It looks like your account has been deleted.'
+      'You don’t have permission to access this content.It looks like your account has been deleted.',
     );
   }
 
-  if (userInfo && userInfo.role !== USER_ROLES.ADMIN && userInfo.role !== USER_ROLES.SUPER_ADMIN) {
+  if (
+    userInfo &&
+    userInfo.role !== USER_ROLES.ADMIN &&
+    userInfo.role !== USER_ROLES.SUPER_ADMIN
+  ) {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
-      "You don’t have permission to access this content."
+      'You don’t have permission to access this content.',
     );
   }
 
@@ -157,7 +162,7 @@ const adminLoginFromDB = async (payload: ILoginData) => {
   const createToken = jwtHelper.createToken(
     { id: userInfo._id, role: userInfo.role, email: userInfo.email },
     config.jwt.jwt_secret as Secret,
-    config.jwt.jwt_expire_in as string
+    config.jwt.jwt_expire_in as string,
   );
 
   // Remove password from response
@@ -204,24 +209,26 @@ const verifyEmailToDB = async (verify_token: string) => {
     {
       token: null,
       verified: true,
-    }
+    },
   );
 
   // Create token
   const createToken = jwtHelper.createToken(
     { id: isExistUser._id, role: isExistUser.role, email: isExistUser.email },
     config.jwt.jwt_secret as Secret,
-    config.jwt.jwt_expire_in as string
+    config.jwt.jwt_expire_in as string,
   );
 
   // Remove sensitive fields
-  const userObj = isExistUser.toObject ? isExistUser.toObject() : { ...isExistUser };
+  const userObj = isExistUser.toObject
+    ? isExistUser.toObject()
+    : { ...isExistUser };
   if ('password' in userObj) delete (userObj as any)?.password;
   if ('token' in userObj) delete (userObj as any)?.token;
 
   return {
     data: { data: userObj, accessToken: createToken },
-    message: 'Account successfully verified.'
+    message: 'Account successfully verified.',
   };
 };
 
@@ -238,13 +245,13 @@ const resetPasswordToDB = async (payload: IAuthResetPassword) => {
   if (newPassword !== confirmPassword) {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
-      "New password and Confirm password doesn't match!"
+      "New password and Confirm password doesn't match!",
     );
   }
 
   const hashPassword = await bcrypt.hash(
     newPassword,
-    Number(config.bcrypt_salt_rounds)
+    Number(config.bcrypt_salt_rounds),
   );
 
   const updateData = {
@@ -259,7 +266,7 @@ const resetPasswordToDB = async (payload: IAuthResetPassword) => {
 
 const changePasswordToDB = async (
   user: JwtPayload,
-  payload: IChangePassword
+  payload: IChangePassword,
 ) => {
   const { currentPassword, newPassword, confirmPassword } = payload;
   const isExistUser = await User.findById(user.id).select('+password');
@@ -274,7 +281,7 @@ const changePasswordToDB = async (
   ) {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
-      'Current password is incorrect'
+      'Current password is incorrect',
     );
   }
 
@@ -282,22 +289,22 @@ const changePasswordToDB = async (
   if (currentPassword === newPassword) {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
-      'Please give different password from current password'
+      'Please give different password from current password',
     );
   }
-  console.log(newPassword, confirmPassword)
+  console.log(newPassword, confirmPassword);
   //new password and confirm password check
   if (newPassword !== confirmPassword) {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
-      "Password and Confirm password doesn't matched"
+      "Password and Confirm password doesn't matched",
     );
   }
 
   //hash password
   const hashPassword = await bcrypt.hash(
     newPassword,
-    Number(config.bcrypt_salt_rounds)
+    Number(config.bcrypt_salt_rounds),
   );
 
   const updateData = {
@@ -315,7 +322,7 @@ const resendEmailToDB = async (email: string) => {
   if (isExistUser.verified) {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
-      'User is already verified! Please login to your account.'
+      'User is already verified! Please login to your account.',
     );
   }
 
@@ -333,5 +340,5 @@ export const AuthService = {
   forgetPasswordToDB,
   resetPasswordToDB,
   changePasswordToDB,
-  adminLoginFromDB
+  adminLoginFromDB,
 };

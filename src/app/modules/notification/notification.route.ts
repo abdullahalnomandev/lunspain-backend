@@ -9,21 +9,28 @@ router
   .route('/')
   .get(
     auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
-    NotificationController.getMyNotifications
+    NotificationController.getMyNotifications,
   );
 
 router
   .route('/club_notification/:clubId')
   .get(
     auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
-    NotificationController.club_notification
+    NotificationController.club_notification,
+  );
+
+router
+  .route('/read-all')
+  .patch(
+    auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+    NotificationController.readAllNotifications,
   );
 
 router
   .route('/:id')
   .patch(
     auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
-    NotificationController.markAsSeen
+    NotificationController.markAsSeen,
   );
 
 export const NotificationRoutes = router;
