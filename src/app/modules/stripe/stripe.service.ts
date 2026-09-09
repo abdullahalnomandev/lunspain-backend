@@ -14,7 +14,7 @@ const createAccountLink = async (userId: string) => {
     ]);
 
     if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'User not found');
-    if (!club) throw new ApiError(StatusCodes.NOT_FOUND, 'You are not the creator of any club');
+    // if (!club) throw new ApiError(StatusCodes.NOT_FOUND, 'You are not the creator of any club');
 
     if (user.connected_account_id && user.stripe_connected_link) {
         throw new ApiError(
